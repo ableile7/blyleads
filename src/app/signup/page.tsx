@@ -3,26 +3,33 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter()
   const supabase = createClient()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    })
+
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
-    router.push('/dashboard')
-    router.refresh()
+
+    router.push('/pending')
   }
 
   return (
@@ -30,12 +37,23 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white tracking-tight">BlyLeads</h1>
-          <p className="text-blue-200 mt-2">Private Lead Portal</p>
+          <p className="text-blue-200 mt-2">Request Portal Access</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Sign In</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Create Account</h2>
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
+                placeholder="John Smith"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
@@ -52,10 +70,11 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
+                minLength={6}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
-                placeholder="••••••••"
+                placeholder="Min. 6 characters"
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -64,15 +83,15 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-[#1F3864] text-white rounded-lg py-2.5 font-semibold hover:bg-[#2a4a80] transition disabled:opacity-50"
             >
-              {loading ? 'Signing in…' : 'Sign In'}
+              {loading ? 'Creating account…' : 'Request Access'}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
             <p className="text-sm text-gray-500">
-              Don&apos;t have an account?{' '}
-              <a href="/signup" className="text-[#1F3864] font-semibold hover:underline">
-                Request Access
+              Already have an account?{' '}
+              <a href="/" className="text-[#1F3864] font-semibold hover:underline">
+                Sign In
               </a>
             </p>
           </div>
