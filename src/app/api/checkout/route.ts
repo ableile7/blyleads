@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
+  const adminSupabase = createAdminClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Create pending order record
-  await supabase.from('orders').insert({
+  // Create pending order record (admin client bypasses RLS)
+  await adminSupabase.from('orders').insert({
     agent_id: user.id,
     tier,
     quantity,
