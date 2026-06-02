@@ -17,13 +17,19 @@ export async function POST(req: NextRequest) {
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   if (order.status === 'paid') return NextResponse.json({ error: 'Already fulfilled' }, { status: 400 })
 
-  // Find available leads for this tier
-  const { data: leads } = await supabase
+  // Build leads query — filter by state if the order has state preferences
+  let leadsQuery = supabase
     .from('leads')
     .select('id')
     .eq('tier', order.tier)
     .eq('is_sold', false)
     .limit(order.quantity)
+
+  if (order.states && order.states.length > 0) {
+    leadsQuery = leadsQuery.in('state', order.states)
+  }
+
+  const { data: leads } = await leadsQuery
 
   if (!leads || leads.length < order.quantity) {
     return NextResponse.json({ error: `Only ${leads?.length ?? 0} leads available, need ${order.quantity}` }, { status: 400 })
@@ -32,19 +38,16 @@ export async function POST(req: NextRequest) {
   const leadIds = leads.map(l => l.id)
   const now = new Date().toISOString()
 
-  // Mark leads as sold
   await supabase
     .from('leads')
     .update({ is_sold: true, sold_to: order.agent_id, sold_at: now })
     .in('id', leadIds)
 
-  // Mark order as paid
   await supabase
     .from('orders')
     .update({ status: 'paid' })
     .eq('id', orderId)
 
-  // Update available_count
   const { data: pricing } = await supabase
     .from('pricing')
     .select('available_count')

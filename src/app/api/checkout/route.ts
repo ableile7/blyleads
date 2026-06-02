@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { tier, quantity } = await req.json()
+  const { tier, quantity, states } = await req.json()
   if (!tier || !quantity || quantity < 1) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
@@ -22,12 +22,19 @@ export async function POST(req: NextRequest) {
   if (!pricing || !pricing.is_active) {
     return NextResponse.json({ error: 'Tier not available' }, { status: 400 })
   }
-  if (quantity > pricing.available_count) {
-    return NextResponse.json({ error: `Only ${pricing.available_count} leads available` }, { status: 400 })
+
+  // Verify actual availability with state filter
+  let availQuery = adminSupabase.from('leads').select('id', { count: 'exact', head: true }).eq('tier', tier).eq('is_sold', false)
+  if (states && states.length > 0) availQuery = availQuery.in('state', states)
+  const { count: actualAvailable } = await availQuery
+
+  if (!actualAvailable || quantity > actualAvailable) {
+    return NextResponse.json({ error: `Only ${actualAvailable ?? 0} leads available for selected states` }, { status: 400 })
   }
 
   const total = pricing.price_per_lead * quantity
   const baseUrl = req.headers.get('origin') || 'http://localhost:3000'
+  const statesLabel = states && states.length > 0 ? ` (${states.join(', ')})` : ''
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -36,7 +43,7 @@ export async function POST(req: NextRequest) {
         currency: 'usd',
         product_data: {
           name: `BlyLeads — ${tier} Tier`,
-          description: `${quantity} leads at $${pricing.price_per_lead}/lead`,
+          description: `${quantity} leads at $${pricing.price_per_lead}/lead${statesLabel}`,
         },
         unit_amount: Math.round(total * 100),
       },
@@ -50,10 +57,10 @@ export async function POST(req: NextRequest) {
       tier,
       quantity: String(quantity),
       price_per_lead: String(pricing.price_per_lead),
+      states: states && states.length > 0 ? states.join(',') : '',
     },
   })
 
-  // Create pending order record (admin client bypasses RLS)
   await adminSupabase.from('orders').insert({
     agent_id: user.id,
     tier,
@@ -62,6 +69,7 @@ export async function POST(req: NextRequest) {
     total_amount: total,
     stripe_session_id: session.id,
     status: 'pending',
+    states: states && states.length > 0 ? states : null,
   })
 
   return NextResponse.json({ url: session.url })
