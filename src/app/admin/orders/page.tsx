@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import FulfillButton from './FulfillButton'
 
 export default async function AdminOrdersPage() {
   const supabase = createAdminClient()
@@ -24,7 +25,7 @@ export default async function AdminOrdersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {['Agent', 'Tier', 'Qty', 'Total', 'Status', 'Date', 'Downloaded'].map(h => (
+              {['Agent', 'Tier', 'Qty', 'Total', 'Status', 'Date', 'Downloaded', ''].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -36,9 +37,7 @@ export default async function AdminOrdersPage() {
                   <p className="font-medium text-gray-800">{order.agents?.full_name}</p>
                   <p className="text-xs text-gray-400">{order.agents?.email}</p>
                 </td>
-                <td className="px-5 py-4">
-                  <TierBadge tier={order.tier} />
-                </td>
+                <td className="px-5 py-4"><TierBadge tier={order.tier} /></td>
                 <td className="px-5 py-4 text-gray-700">{order.quantity}</td>
                 <td className="px-5 py-4 font-semibold text-gray-800">${Number(order.total_amount).toFixed(2)}</td>
                 <td className="px-5 py-4">
@@ -55,10 +54,15 @@ export default async function AdminOrdersPage() {
                     ? new Date(order.downloaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     : '—'}
                 </td>
+                <td className="px-5 py-4">
+                  {order.status === 'pending' && (
+                    <FulfillButton orderId={order.id} />
+                  )}
+                </td>
               </tr>
             ))}
             {(!orders || orders.length === 0) && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-gray-400">No orders yet.</td></tr>
+              <tr><td colSpan={8} className="px-5 py-10 text-center text-gray-400">No orders yet.</td></tr>
             )}
           </tbody>
         </table>
