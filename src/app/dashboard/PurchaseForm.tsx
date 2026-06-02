@@ -12,7 +12,7 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; b
 
 export default function PurchaseForm({ tier }: { tier: Tier }) {
   const [states, setStates] = useState<StateCount[]>([])
-  const [selectedStates, setSelectedStates] = useState<string[]>([])
+  const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [loadingStates, setLoadingStates] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,24 +25,26 @@ export default function PurchaseForm({ tier }: { tier: Tier }) {
       .catch(() => setLoadingStates(false))
   }, [tier.tier])
 
-  function toggleState(state: string) {
-    setSelectedStates(prev =>
-      prev.includes(state) ? prev.filter(s => s !== state) : [...prev, state]
-    )
+  function setQty(state: string, value: number, max: number) {
+    const clamped = Math.max(0, Math.min(value, max))
+    setQuantities(prev => ({ ...prev, [state]: clamped }))
   }
 
-  function selectAll() { setSelectedStates(states.map(s => s.state)) }
-  function clearAll() { setSelectedStates([]) }
+  function selectAll() {
+    const all: Record<string, number> = {}
+    states.forEach(s => { all[s.state] = s.count })
+    setQuantities(all)
+  }
 
-  const availableInSelected = selectedStates.length === 0
-    ? tier.available_count
-    : states.filter(s => selectedStates.includes(s.state)).reduce((sum, s) => sum + s.count, 0)
+  function clearAll() { setQuantities({}) }
 
-  const total = (tier.price_per_lead * availableInSelected).toFixed(2)
+  const totalLeads = Object.values(quantities).reduce((sum, q) => sum + q, 0)
+  const totalPrice = (tier.price_per_lead * totalLeads).toFixed(2)
+  const selectedStates = states.filter(s => (quantities[s.state] || 0) > 0).map(s => s.state)
   const soldOut = tier.available_count === 0
 
   async function handlePurchase() {
-    if (availableInSelected === 0) { setError('No leads available for selected states'); return }
+    if (totalLeads === 0) { setError('Enter a quantity for at least one state'); return }
     setError('')
     setLoading(true)
     const res = await fetch('/api/checkout', {
@@ -50,7 +52,7 @@ export default function PurchaseForm({ tier }: { tier: Tier }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tier: tier.tier,
-        quantity: availableInSelected,
+        quantity: totalLeads,
         states: selectedStates.length > 0 ? selectedStates : null,
       }),
     })
@@ -74,34 +76,36 @@ export default function PurchaseForm({ tier }: { tier: Tier }) {
 
       {!soldOut && (
         <>
-          {/* State selector */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-gray-600">Filter by State</label>
+              <label className="text-xs font-semibold text-gray-600">Select by State</label>
               <div className="flex gap-2">
                 <button onClick={selectAll} className="text-xs text-blue-600 hover:underline">All</button>
                 <span className="text-gray-300">|</span>
-                <button onClick={clearAll} className="text-xs text-gray-400 hover:underline">None</button>
+                <button onClick={clearAll} className="text-xs text-gray-400 hover:underline">Clear</button>
               </div>
             </div>
 
             {loadingStates ? (
               <p className="text-xs text-gray-400">Loading states…</p>
             ) : (
-              <div className="max-h-44 overflow-y-auto bg-white rounded-xl border border-gray-200 divide-y divide-gray-50">
+              <div className="max-h-52 overflow-y-auto bg-white rounded-xl border border-gray-200 divide-y divide-gray-50">
                 {states.map(({ state, count }) => (
-                  <label key={state} className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition ${selectedStates.includes(state) ? 'bg-blue-50' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedStates.includes(state)}
-                        onChange={() => toggleState(state)}
-                        className="w-3.5 h-3.5 accent-[#1F3864]"
-                      />
+                  <div key={state} className="flex items-center justify-between px-3 py-2 gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="text-sm font-medium text-gray-700">{state}</span>
+                      <span className="text-xs text-gray-400">({count} avail)</span>
                     </div>
-                    <span className="text-xs text-gray-400 font-semibold">{count}</span>
-                  </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={count}
+                      value={quantities[state] || ''}
+                      placeholder="0"
+                      onChange={e => setQty(state, parseInt(e.target.value) || 0, count)}
+                      className="w-16 text-center text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:border-gray-400"
+                    />
+                  </div>
                 ))}
                 {states.length === 0 && <p className="text-xs text-gray-400 px-3 py-3">No states available</p>}
               </div>
@@ -110,13 +114,13 @@ export default function PurchaseForm({ tier }: { tier: Tier }) {
 
           <div className="bg-white/60 rounded-lg px-4 py-2.5 text-sm flex justify-between items-center">
             <div>
-              <span className="text-gray-500">Selected: </span>
-              <span className="font-semibold text-gray-800">{availableInSelected} leads</span>
+              <span className="text-gray-500">Total: </span>
+              <span className="font-semibold text-gray-800">{totalLeads} lead{totalLeads !== 1 ? 's' : ''}</span>
               {selectedStates.length > 0 && (
                 <span className="text-xs text-gray-400 ml-1">({selectedStates.length} state{selectedStates.length > 1 ? 's' : ''})</span>
               )}
             </div>
-            <span className="font-bold text-gray-800">${total}</span>
+            <span className="font-bold text-gray-800">${totalPrice}</span>
           </div>
         </>
       )}
@@ -125,10 +129,10 @@ export default function PurchaseForm({ tier }: { tier: Tier }) {
 
       <button
         onClick={handlePurchase}
-        disabled={loading || soldOut || availableInSelected === 0}
+        disabled={loading || soldOut || totalLeads === 0}
         className={`mt-auto text-white rounded-lg py-2.5 font-semibold text-sm transition disabled:opacity-50 ${c.btn}`}
       >
-        {soldOut ? 'Sold Out' : loading ? 'Redirecting…' : `Purchase ${availableInSelected > 0 ? availableInSelected : ''} Leads`}
+        {soldOut ? 'Sold Out' : loading ? 'Redirecting…' : `Purchase ${totalLeads > 0 ? totalLeads : ''} Leads`}
       </button>
     </div>
   )
