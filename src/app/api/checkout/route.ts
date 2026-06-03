@@ -1,6 +1,9 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
+
+type CartItem = { tier: string; quantity: number; states?: string[] }
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -8,69 +11,84 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { tier, quantity, states } = await req.json()
-  if (!tier || !quantity || quantity < 1) {
+  const { items }: { items: CartItem[] } = await req.json()
+  if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  const { data: pricing } = await supabase
-    .from('pricing')
-    .select('price_per_lead, available_count, is_active')
-    .eq('tier', tier)
-    .single()
+  // Validate each tier and verify availability
+  const pricingMap: Record<string, number> = {}
+  for (const item of items) {
+    if (!item.tier || !item.quantity || item.quantity < 1) {
+      return NextResponse.json({ error: `Invalid quantity for ${item.tier}` }, { status: 400 })
+    }
 
-  if (!pricing || !pricing.is_active) {
-    return NextResponse.json({ error: 'Tier not available' }, { status: 400 })
+    const { data: pricing } = await supabase
+      .from('pricing')
+      .select('price_per_lead, is_active')
+      .eq('tier', item.tier)
+      .single()
+
+    if (!pricing || !pricing.is_active) {
+      return NextResponse.json({ error: `Tier ${item.tier} not available` }, { status: 400 })
+    }
+
+    pricingMap[item.tier] = pricing.price_per_lead
+
+    let availQuery = adminSupabase
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('tier', item.tier)
+      .eq('is_sold', false)
+    if (item.states && item.states.length > 0) availQuery = availQuery.in('state', item.states)
+    const { count: actualAvailable } = await availQuery
+
+    if (!actualAvailable || item.quantity > actualAvailable) {
+      return NextResponse.json({
+        error: `Only ${actualAvailable ?? 0} ${item.tier} leads available${item.states?.length ? ' for selected states' : ''}`,
+      }, { status: 400 })
+    }
   }
 
-  // Verify actual availability with state filter
-  let availQuery = adminSupabase.from('leads').select('id', { count: 'exact', head: true }).eq('tier', tier).eq('is_sold', false)
-  if (states && states.length > 0) availQuery = availQuery.in('state', states)
-  const { count: actualAvailable } = await availQuery
-
-  if (!actualAvailable || quantity > actualAvailable) {
-    return NextResponse.json({ error: `Only ${actualAvailable ?? 0} leads available for selected states` }, { status: 400 })
-  }
-
-  const total = pricing.price_per_lead * quantity
   const baseUrl = req.headers.get('origin') || 'http://localhost:3000'
-  const statesLabel = states && states.length > 0 ? ` (${states.join(', ')})` : ''
+  const downloadToken = randomUUID()
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-    line_items: [{
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `BlyLeads — ${tier} Tier`,
-          description: `${quantity} leads at $${pricing.price_per_lead}/lead${statesLabel}`,
+    line_items: items.map(item => {
+      const statesLabel = item.states && item.states.length > 0 ? ` (${item.states.join(', ')})` : ''
+      return {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `BlyLeads — ${item.tier} Tier`,
+            description: `${item.quantity} leads at $${pricingMap[item.tier]}/lead${statesLabel}`,
+          },
+          unit_amount: Math.round(pricingMap[item.tier] * item.quantity * 100),
         },
-        unit_amount: Math.round(total * 100),
-      },
-      quantity: 1,
-    }],
+        quantity: 1,
+      }
+    }),
     mode: 'payment',
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/dashboard`,
-    metadata: {
-      agent_id: user.id,
-      tier,
-      quantity: String(quantity),
-      price_per_lead: String(pricing.price_per_lead),
-      states: states && states.length > 0 ? states.join(',') : '',
-    },
+    metadata: { agent_id: user.id, download_token: downloadToken },
   })
 
-  await adminSupabase.from('orders').insert({
+  // One order row per tier, all sharing the same session + download token
+  const orderRows = items.map(item => ({
     agent_id: user.id,
-    tier,
-    quantity,
-    price_per_lead: pricing.price_per_lead,
-    total_amount: total,
+    tier: item.tier,
+    quantity: item.quantity,
+    price_per_lead: pricingMap[item.tier],
+    total_amount: pricingMap[item.tier] * item.quantity,
     stripe_session_id: session.id,
     status: 'pending',
-    states: states && states.length > 0 ? states : null,
-  })
+    states: item.states && item.states.length > 0 ? item.states : null,
+    download_token: downloadToken,
+  }))
+
+  await adminSupabase.from('orders').insert(orderRows)
 
   return NextResponse.json({ url: session.url })
 }

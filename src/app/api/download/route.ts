@@ -1,13 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-
-const CSV_COLUMNS = [
-  'Lead ID', 'List Code', 'Record Date', 'Contact Name', 'Street Address',
-  'City', 'State', 'ZIP Code', 'Area Code', 'Time Zone', 'Primary Phone',
-  'Secondary Phone', 'Alt Phone Combo', 'Mobile Phone', 'Last Contact Date',
-  'Date of Birth', 'Health Notes', 'Tobacco User', 'Loan Amount',
-  'Coverage Type', 'Financial Institution', 'Spanish Speaking',
-]
+import * as XLSX from 'xlsx'
 
 const DB_TO_CSV: Record<string, string> = {
   lead_id: 'Lead ID',
@@ -25,6 +18,8 @@ const DB_TO_CSV: Record<string, string> = {
   financial_institution: 'Financial Institution',
 }
 
+const COLUMNS = Object.values(DB_TO_CSV)
+
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
@@ -35,52 +30,56 @@ export async function GET(req: NextRequest) {
 
   const adminSupabase = createAdminClient()
 
-  // Validate token and get order
-  const { data: order } = await adminSupabase
+  // Find all paid orders for this download token
+  const { data: orders } = await adminSupabase
     .from('orders')
     .select('*')
     .eq('download_token', token)
     .eq('agent_id', user.id)
     .eq('status', 'paid')
-    .single()
 
-  if (!order) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 })
-
-  // Get the leads for this order
-  const { data: leads } = await adminSupabase
-    .from('leads')
-    .select('*')
-    .eq('sold_to', user.id)
-    .eq('tier', order.tier)
-    .not('sold_at', 'is', null)
-    .order('sold_at', { ascending: false })
-    .limit(order.quantity)
-
-  if (!leads || leads.length === 0) {
-    return NextResponse.json({ error: 'No leads found' }, { status: 404 })
+  if (!orders || orders.length === 0) {
+    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 })
   }
 
-  // Mark as downloaded
-  await adminSupabase
-    .from('orders')
-    .update({ downloaded_at: new Date().toISOString() })
-    .eq('id', order.id)
+  const workbook = XLSX.utils.book_new()
+  const now = new Date().toISOString()
 
-  // Build CSV
-  const rows = [CSV_COLUMNS.join(',')]
-  for (const lead of leads) {
-    const row = CSV_COLUMNS.map(col => {
-      const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
-      const val = dbKey ? (lead[dbKey] ?? '') : ''
-      return `"${String(val).replace(/"/g, '""')}"`
-    })
-    rows.push(row.join(','))
+  for (const order of orders) {
+    const { data: leads } = await adminSupabase
+      .from('leads')
+      .select('*')
+      .eq('sold_to', user.id)
+      .eq('tier', order.tier)
+      .not('sold_at', 'is', null)
+      .order('sold_at', { ascending: false })
+      .limit(order.quantity)
+
+    if (!leads || leads.length === 0) continue
+
+    const rows = leads.map(lead =>
+      COLUMNS.map(col => {
+        const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
+        return dbKey ? (lead[dbKey] ?? '') : ''
+      })
+    )
+
+    const sheet = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows])
+    XLSX.utils.book_append_sheet(workbook, sheet, order.tier)
+
+    await adminSupabase
+      .from('orders')
+      .update({ downloaded_at: now })
+      .eq('id', order.id)
   }
 
-  return new NextResponse(rows.join('\n'), {
+  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
+  const sessionId = orders[0].stripe_session_id?.slice(-8) || 'download'
+
+  return new NextResponse(buffer, {
     headers: {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': `attachment; filename="blyleads-${order.tier.toLowerCase()}-${order.id.slice(0, 8)}.csv"`,
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="blyleads-${sessionId}.xlsx"`,
     },
   })
 }

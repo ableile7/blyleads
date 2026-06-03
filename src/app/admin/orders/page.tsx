@@ -1,6 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import FulfillButton from './FulfillButton'
 
+type Order = {
+  id: string
+  tier: string
+  quantity: number
+  total_amount: number
+  status: string
+  created_at: string
+  stripe_session_id: string
+  downloaded_at: string | null
+  agents?: { full_name: string; email: string }
+}
+
 export default async function AdminOrdersPage() {
   const supabase = createAdminClient()
   const { data: orders } = await supabase
@@ -10,6 +22,15 @@ export default async function AdminOrdersPage() {
 
   const totalRevenue = orders?.filter(o => o.status === 'paid')
     .reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0
+
+  // Group by stripe_session_id
+  const sessionMap = new Map<string, Order[]>()
+  for (const order of (orders || [])) {
+    const key = order.stripe_session_id || order.id
+    if (!sessionMap.has(key)) sessionMap.set(key, [])
+    sessionMap.get(key)!.push(order)
+  }
+  const sessions = Array.from(sessionMap.values())
 
   return (
     <div>
@@ -25,43 +46,57 @@ export default async function AdminOrdersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {['Agent', 'Tier', 'Qty', 'Total', 'Status', 'Date', 'Downloaded', ''].map(h => (
+              {['Agent', 'Tiers', 'Leads', 'Total', 'Status', 'Date', 'Downloaded', ''].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {orders?.map(order => (
-              <tr key={order.id} className="hover:bg-gray-50 transition">
-                <td className="px-5 py-4">
-                  <p className="font-medium text-gray-800">{order.agents?.full_name}</p>
-                  <p className="text-xs text-gray-400">{order.agents?.email}</p>
-                </td>
-                <td className="px-5 py-4"><TierBadge tier={order.tier} /></td>
-                <td className="px-5 py-4 text-gray-700">{order.quantity}</td>
-                <td className="px-5 py-4 font-semibold text-gray-800">${Number(order.total_amount).toFixed(2)}</td>
-                <td className="px-5 py-4">
-                  <span className={`text-xs font-semibold capitalize ${
-                    order.status === 'paid' ? 'text-green-600' :
-                    order.status === 'failed' ? 'text-red-500' : 'text-yellow-600'
-                  }`}>{order.status}</span>
-                </td>
-                <td className="px-5 py-4 text-gray-500 text-xs">
-                  {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </td>
-                <td className="px-5 py-4 text-xs text-gray-400">
-                  {order.downloaded_at
-                    ? new Date(order.downloaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    : '—'}
-                </td>
-                <td className="px-5 py-4">
-                  {order.status === 'pending' && (
-                    <FulfillButton orderId={order.id} />
-                  )}
-                </td>
-              </tr>
-            ))}
-            {(!orders || orders.length === 0) && (
+            {sessions.map(sessionOrders => {
+              const first = sessionOrders[0]
+              const totalLeads = sessionOrders.reduce((s, o) => s + o.quantity, 0)
+              const totalAmount = sessionOrders.reduce((s, o) => s + Number(o.total_amount), 0)
+              const allPaid = sessionOrders.every(o => o.status === 'paid')
+              const anyPending = sessionOrders.some(o => o.status === 'pending')
+              const status = allPaid ? 'paid' : anyPending ? 'pending' : 'failed'
+              const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
+
+              return (
+                <tr key={first.stripe_session_id || first.id} className="hover:bg-gray-50 transition">
+                  <td className="px-5 py-4">
+                    <p className="font-medium text-gray-800">{first.agents?.full_name}</p>
+                    <p className="text-xs text-gray-400">{first.agents?.email}</p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {sessionOrders.map(o => <TierBadge key={o.id} tier={o.tier} />)}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-gray-700">{totalLeads}</td>
+                  <td className="px-5 py-4 font-semibold text-gray-800">${totalAmount.toFixed(2)}</td>
+                  <td className="px-5 py-4">
+                    <span className={`text-xs font-semibold capitalize ${
+                      status === 'paid' ? 'text-green-600' :
+                      status === 'failed' ? 'text-red-500' : 'text-yellow-600'
+                    }`}>{status}</span>
+                  </td>
+                  <td className="px-5 py-4 text-gray-500 text-xs">
+                    {new Date(first.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </td>
+                  <td className="px-5 py-4 text-xs text-gray-400">
+                    {wasDownloaded
+                      ? new Date(sessionOrders.find(o => o.downloaded_at)!.downloaded_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : '—'}
+                  </td>
+                  <td className="px-5 py-4">
+                    {anyPending && (
+                      <FulfillButton sessionId={first.stripe_session_id} />
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+            {sessions.length === 0 && (
               <tr><td colSpan={8} className="px-5 py-10 text-center text-gray-400">No orders yet.</td></tr>
             )}
           </tbody>

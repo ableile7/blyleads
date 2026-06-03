@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function FulfillButton({ orderId }: { orderId: string }) {
+export default function FulfillButton({ sessionId }: { sessionId: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -13,7 +13,7 @@ export default function FulfillButton({ orderId }: { orderId: string }) {
     const res = await fetch('/api/admin/fulfill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ sessionId }),
     })
     const data = await res.json()
     if (!res.ok) {

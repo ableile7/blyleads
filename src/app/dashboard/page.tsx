@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import PurchaseForm from './PurchaseForm'
+import DashboardCart from './DashboardCart'
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -34,13 +34,9 @@ export default async function DashboardPage() {
 
       <main className="max-w-5xl mx-auto px-6 py-10">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Available Leads</h2>
-        <p className="text-gray-500 text-sm mb-8">Select a tier, set your quantity, and purchase instantly.</p>
+        <p className="text-gray-500 text-sm mb-8">Enter quantities by state for any tier, then purchase all at once.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {pricing?.map(tier => (
-            <PurchaseForm key={tier.tier} tier={tier} />
-          ))}
-        </div>
+        <DashboardCart tiers={pricing || []} />
       </main>
     </div>
   )

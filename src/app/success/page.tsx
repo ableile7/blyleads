@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export default async function SuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
@@ -6,12 +6,18 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const { data: order } = await supabase
+  const adminSupabase = createAdminClient()
+  const { data: orders } = await adminSupabase
     .from('orders')
     .select('*')
     .eq('agent_id', user.id)
     .eq('stripe_session_id', searchParams.session_id || '')
-    .single()
+    .order('tier')
+
+  const totalLeads = orders?.reduce((s, o) => s + o.quantity, 0) ?? 0
+  const totalAmount = orders?.reduce((s, o) => s + Number(o.total_amount), 0) ?? 0
+  const allPaid = orders?.every(o => o.status === 'paid') ?? false
+  const downloadToken = orders?.[0]?.download_token
 
   return (
     <div className="min-h-screen bg-[#1F3864] flex items-center justify-center p-4">
@@ -24,17 +30,31 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful</h1>
 
-          {order ? (
+          {orders && orders.length > 0 ? (
             <>
-              <p className="text-gray-500 text-sm mb-6">
-                Your order of <span className="font-semibold text-gray-700">{order.quantity} {order.tier} leads</span> is being processed.
+              <p className="text-gray-500 text-sm mb-4">
+                Your order of <span className="font-semibold text-gray-700">{totalLeads} leads</span> totaling{' '}
+                <span className="font-semibold text-gray-700">${totalAmount.toFixed(2)}</span> is being processed.
               </p>
-              {order.status === 'paid' && order.download_token ? (
+
+              <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left space-y-2">
+                {orders.map(order => (
+                  <div key={order.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <TierBadge tier={order.tier} />
+                      <span className="text-gray-600">{order.quantity} leads</span>
+                    </div>
+                    <span className="font-semibold text-gray-700">${Number(order.total_amount).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {allPaid && downloadToken ? (
                 <a
-                  href={`/api/download?token=${order.download_token}`}
+                  href={`/api/download?token=${downloadToken}`}
                   className="block w-full bg-[#1F3864] text-white rounded-lg py-3 font-semibold hover:bg-[#2a4a80] transition mb-4"
                 >
-                  Download CSV
+                  Download Excel File
                 </a>
               ) : (
                 <div className="bg-blue-50 rounded-xl p-4 mb-4">
@@ -57,5 +77,18 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
         </div>
       </div>
     </div>
+  )
+}
+
+function TierBadge({ tier }: { tier: string }) {
+  const styles: Record<string, string> = {
+    Prime:   'bg-[#e8f0f8] text-[#1F3864]',
+    Select:  'bg-[#eaf2e4] text-[#2d4a1e]',
+    Premier: 'bg-[#f5eaf2] text-[#4a1e3a]',
+  }
+  return (
+    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>
+      {tier}
+    </span>
   )
 }
