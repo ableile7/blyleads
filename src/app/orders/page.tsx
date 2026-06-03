@@ -35,8 +35,8 @@ export default async function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#1F3864] text-white px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">BlyLeads</h1>
+      <header className="bg-[#080e1c] text-white px-6 py-4 flex items-center justify-between">
+        <img src="/logo.png" alt="BlyLeads" className="h-8" />
         <div className="flex items-center gap-4">
           <a href="/dashboard" className="text-sm text-blue-200 hover:text-white transition">Dashboard</a>
           <a href="/api/auth/signout" className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
@@ -86,7 +86,7 @@ export default async function OrdersPage() {
                       {allPaid && downloadToken && (
                         <a
                           href={`/api/download?token=${downloadToken}`}
-                          className="bg-[#1F3864] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#2a4a80] transition"
+                          className="bg-[#2d6af6] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#1a55db] transition"
                         >
                           {wasDownloaded ? 'Re-Download' : 'Download Excel'}
                         </a>

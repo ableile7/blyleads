@@ -21,8 +21,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#1F3864] text-white px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">BlyLeads</h1>
+      <header className="bg-[#080e1c] text-white px-6 py-4 flex items-center justify-between">
+        <img src="/logo.png" alt="BlyLeads" className="h-8" />
         <div className="flex items-center gap-4">
           <span className="text-blue-200 text-sm">{agent?.full_name}</span>
           <a href="/orders" className="text-sm text-blue-200 hover:text-white transition">Orders</a>

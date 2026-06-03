@@ -20,7 +20,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
   const downloadToken = orders?.[0]?.download_token
 
   return (
-    <div className="min-h-screen bg-[#1F3864] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#080e1c] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-10 text-center">
           <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -52,7 +52,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
               {allPaid && downloadToken ? (
                 <a
                   href={`/api/download?token=${downloadToken}`}
-                  className="block w-full bg-[#1F3864] text-white rounded-lg py-3 font-semibold hover:bg-[#2a4a80] transition mb-4"
+                  className="block w-full bg-[#2d6af6] text-white rounded-lg py-3 font-semibold hover:bg-[#1a55db] transition mb-4"
                 >
                   Download Excel File
                 </a>

@@ -85,7 +85,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
           <button
             onClick={handleCheckout}
             disabled={loading}
-            className="w-full bg-[#1F3864] hover:bg-[#2a4a80] text-white font-bold py-3 rounded-xl transition disabled:opacity-50 text-sm"
+            className="w-full bg-[#2d6af6] hover:bg-[#1a55db] text-white font-bold py-3 rounded-xl transition disabled:opacity-50 text-sm"
           >
             {loading ? 'Redirecting to checkout…' : `Purchase ${totalLeads} Lead${totalLeads !== 1 ? 's' : ''} — $${totalPrice.toFixed(2)}`}
           </button>
@@ -97,7 +97,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    Prime:   'bg-[#e8f0f8] text-[#1F3864]',
+    Prime:   'bg-[#e8f0f8] text-[#2d6af6]',
     Select:  'bg-[#eaf2e4] text-[#2d4a1e]',
     Premier: 'bg-[#f5eaf2] text-[#4a1e3a]',
   }

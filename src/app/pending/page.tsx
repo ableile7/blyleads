@@ -1,10 +1,10 @@
 export default function PendingPage() {
   return (
-    <div className="min-h-screen bg-[#1F3864] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#080e1c] flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
         <div className="bg-white rounded-2xl shadow-2xl p-10">
           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-[#1F3864]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-[#2d6af6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -15,7 +15,7 @@ export default function PendingPage() {
 
           <div className="text-left space-y-4 mb-6">
             <div className="flex items-start gap-3 bg-blue-50 rounded-xl p-4">
-              <span className="w-6 h-6 bg-[#1F3864] text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+              <span className="w-6 h-6 bg-[#2d6af6] text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
               <div>
                 <p className="text-sm font-semibold text-gray-800">Confirm your email</p>
                 <p className="text-xs text-gray-500 mt-0.5">Check your inbox for a confirmation link from BlyLeads and click it to verify your email address.</p>
@@ -32,7 +32,7 @@ export default function PendingPage() {
 
           <a
             href="/"
-            className="text-sm text-[#1F3864] font-semibold hover:underline"
+            className="text-sm text-[#2d6af6] font-semibold hover:underline"
           >
             ← Back to Sign In
           </a>

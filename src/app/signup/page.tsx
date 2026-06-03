@@ -33,11 +33,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1F3864] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#080e1c] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white tracking-tight">BlyLeads</h1>
-          <p className="text-blue-200 mt-2">Request Portal Access</p>
+          <img src="/logo.png" alt="BlyLeads" className="h-28 mx-auto" />
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -50,7 +49,7 @@ export default function SignupPage() {
                 required
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6af6]"
                 placeholder="John Smith"
               />
             </div>
@@ -61,7 +60,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6af6]"
                 placeholder="you@example.com"
               />
             </div>
@@ -73,7 +72,7 @@ export default function SignupPage() {
                 minLength={6}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6af6]"
                 placeholder="Min. 6 characters"
               />
             </div>
@@ -81,7 +80,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#1F3864] text-white rounded-lg py-2.5 font-semibold hover:bg-[#2a4a80] transition disabled:opacity-50"
+              className="w-full bg-[#2d6af6] text-white rounded-lg py-2.5 font-semibold hover:bg-[#1a55db] transition disabled:opacity-50"
             >
               {loading ? 'Creating account…' : 'Request Access'}
             </button>
@@ -90,7 +89,7 @@ export default function SignupPage() {
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
             <p className="text-sm text-gray-500">
               Already have an account?{' '}
-              <a href="/" className="text-[#1F3864] font-semibold hover:underline">
+              <a href="/" className="text-[#2d6af6] font-semibold hover:underline">
                 Sign In
               </a>
             </p>
