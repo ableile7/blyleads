@@ -36,7 +36,7 @@ export default async function OrdersPage() {
   return (
     <div className="min-h-screen bg-[#080e1c]">
       <header className="bg-[#080e1c] border-b border-white/10 text-white px-6 py-3 flex items-center justify-between">
-        <img src="/logo.png" alt="BlyLeads" className="h-12" />
+        <img src="/logo.png" alt="BlyLeads" className="h-10" />
         <div className="flex items-center gap-4">
           <a href="/dashboard" className="text-sm text-blue-200 hover:text-white transition">Dashboard</a>
           <a href="/api/auth/signout" className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
