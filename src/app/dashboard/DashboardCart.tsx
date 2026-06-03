@@ -59,10 +59,10 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
       </div>
 
       {totalLeads > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-[#0f1729] border border-white/10 rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800 text-lg">Cart Summary</h3>
-            <span className="text-2xl font-bold text-gray-800">${totalPrice.toFixed(2)}</span>
+            <h3 className="font-bold text-white text-lg">Cart Summary</h3>
+            <span className="text-2xl font-bold text-white">${totalPrice.toFixed(2)}</span>
           </div>
 
           <div className="space-y-2 mb-5">
@@ -70,17 +70,17 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
               <div key={item.tier} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <TierBadge tier={item.tier} />
-                  <span className="text-gray-600">{item.quantity} lead{item.quantity !== 1 ? 's' : ''}</span>
+                  <span className="text-slate-300">{item.quantity} lead{item.quantity !== 1 ? 's' : ''}</span>
                   {item.states.length > 0 && (
-                    <span className="text-xs text-gray-400">({item.states.join(', ')})</span>
+                    <span className="text-xs text-slate-500">({item.states.join(', ')})</span>
                   )}
                 </div>
-                <span className="font-semibold text-gray-700">${(item.quantity * item.pricePerLead).toFixed(2)}</span>
+                <span className="font-semibold text-white">${(item.quantity * item.pricePerLead).toFixed(2)}</span>
               </div>
             ))}
           </div>
 
-          {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
+          {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
 
           <button
             onClick={handleCheckout}
@@ -97,12 +97,12 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    Prime:   'bg-[#e8f0f8] text-[#2d6af6]',
-    Select:  'bg-[#eaf2e4] text-[#2d4a1e]',
-    Premier: 'bg-[#f5eaf2] text-[#4a1e3a]',
+    Prime:   'bg-[#1a3a7a] text-[#7eb3ff]',
+    Select:  'bg-[#0f2b14] text-[#7ecc8f]',
+    Premier: 'bg-[#2a0f2e] text-[#d47ef0]',
   }
   return (
-    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
       {tier}
     </span>
   )

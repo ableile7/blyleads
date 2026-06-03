@@ -34,9 +34,9 @@ export default async function OrdersPage() {
   const sessions = Array.from(sessionMap.values())
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-[#080e1c] text-white px-6 py-4 flex items-center justify-between">
-        <img src="/logo.png" alt="BlyLeads" className="h-8" />
+    <div className="min-h-screen bg-[#080e1c]">
+      <header className="bg-[#080e1c] border-b border-white/10 text-white px-6 py-3 flex items-center justify-between">
+        <img src="/logo.png" alt="BlyLeads" className="h-12" />
         <div className="flex items-center gap-4">
           <a href="/dashboard" className="text-sm text-blue-200 hover:text-white transition">Dashboard</a>
           <a href="/api/auth/signout" className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
@@ -46,12 +46,12 @@ export default async function OrdersPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8">Order History</h2>
+        <h2 className="text-2xl font-bold text-white mb-8">Order History</h2>
 
         {sessions.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <p className="text-gray-400">No orders yet.</p>
-            <a href="/dashboard" className="mt-4 inline-block text-[#1F3864] font-semibold text-sm hover:underline">
+          <div className="bg-[#0f1729] rounded-2xl border border-white/10 p-12 text-center">
+            <p className="text-slate-400">No orders yet.</p>
+            <a href="/dashboard" className="mt-4 inline-block text-[#2d6af6] font-semibold text-sm hover:underline">
               Browse leads →
             </a>
           </div>
@@ -67,22 +67,22 @@ export default async function OrdersPage() {
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
 
               return (
-                <div key={first.stripe_session_id || first.id} className="bg-white rounded-2xl border border-gray-100 p-6">
+                <div key={first.stripe_session_id || first.id} className="bg-[#0f1729] rounded-2xl border border-white/10 p-6">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         {sessionOrders.map(o => <TierBadge key={o.id} tier={o.tier} />)}
                         <StatusBadge status={allPaid ? 'paid' : anyPending ? 'pending' : 'failed'} />
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-slate-300 mt-1">
                         {totalLeads} lead{totalLeads !== 1 ? 's' : ''} across {sessionOrders.length} tier{sessionOrders.length !== 1 ? 's' : ''}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         {new Date(first.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
-                      <p className="font-bold text-gray-800 text-lg">${totalAmount.toFixed(2)}</p>
+                      <p className="font-bold text-white text-lg">${totalAmount.toFixed(2)}</p>
                       {allPaid && downloadToken && (
                         <a
                           href={`/api/download?token=${downloadToken}`}
@@ -95,9 +95,9 @@ export default async function OrdersPage() {
                   </div>
 
                   {sessionOrders.length > 1 && (
-                    <div className="mt-3 pt-3 border-t border-gray-50 space-y-1">
+                    <div className="mt-3 pt-3 border-t border-white/10 space-y-1">
                       {sessionOrders.map(o => (
-                        <div key={o.id} className="flex items-center justify-between text-xs text-gray-500">
+                        <div key={o.id} className="flex items-center justify-between text-xs text-slate-500">
                           <span>{o.tier}: {o.quantity} leads</span>
                           <span>${Number(o.total_amount).toFixed(2)}</span>
                         </div>
@@ -116,9 +116,9 @@ export default async function OrdersPage() {
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    Prime:   'bg-[#e8f0f8] text-[#1F3864]',
-    Select:  'bg-[#eaf2e4] text-[#2d4a1e]',
-    Premier: 'bg-[#f5eaf2] text-[#4a1e3a]',
+    Prime:   'bg-[#1a3a7a] text-[#7eb3ff]',
+    Select:  'bg-[#0f2b14] text-[#7ecc8f]',
+    Premier: 'bg-[#2a0f2e] text-[#d47ef0]',
   }
   return (
     <span className={`text-xs font-bold px-3 py-1 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>
