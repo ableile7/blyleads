@@ -53,22 +53,35 @@ export async function POST(req: NextRequest) {
   const baseUrl = req.headers.get('origin') || 'http://localhost:3000'
   const downloadToken = randomUUID()
 
+  const subtotal = items.reduce((sum, item) => sum + pricingMap[item.tier] * item.quantity, 0)
+  const processingFeeCents = Math.round(subtotal * 0.03 * 100)
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-    line_items: items.map(item => {
-      const statesLabel = item.states && item.states.length > 0 ? ` (${item.states.join(', ')})` : ''
-      return {
+    line_items: [
+      ...items.map(item => {
+        const statesLabel = item.states && item.states.length > 0 ? ` (${item.states.join(', ')})` : ''
+        return {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `BlyLeads — ${item.tier} Tier`,
+              description: `${item.quantity} leads at $${pricingMap[item.tier]}/lead${statesLabel}`,
+            },
+            unit_amount: Math.round(pricingMap[item.tier] * item.quantity * 100),
+          },
+          quantity: 1,
+        }
+      }),
+      {
         price_data: {
           currency: 'usd',
-          product_data: {
-            name: `BlyLeads — ${item.tier} Tier`,
-            description: `${item.quantity} leads at $${pricingMap[item.tier]}/lead${statesLabel}`,
-          },
-          unit_amount: Math.round(pricingMap[item.tier] * item.quantity * 100),
+          product_data: { name: 'Card Processing Fee (3%)' },
+          unit_amount: processingFeeCents,
         },
         quantity: 1,
-      }
-    }),
+      },
+    ],
     mode: 'payment',
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/dashboard`,
