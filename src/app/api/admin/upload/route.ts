@@ -65,10 +65,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to parse CSV' }, { status: 400 })
   }
 
-  // Fetch existing lead IDs to deduplicate
   const supabase = createAdminClient()
-  const { data: existing } = await supabase.from('leads').select('lead_id').eq('tier', tier)
-  const existingIds = new Set(existing?.map(r => r.lead_id) ?? [])
+
+  // Fetch existing records for deduplication by source ID and name+phone
+  const { data: existing } = await supabase.from('leads').select('source_lead_id, contact_name, primary_phone')
+  const existingSourceIds = new Set(existing?.map(r => r.source_lead_id).filter(Boolean) ?? [])
+  const existingNamePhone = new Set(
+    existing
+      ?.filter(r => r.contact_name && r.primary_phone)
+      .map(r => `${r.contact_name?.toLowerCase().trim()}|${r.primary_phone?.trim()}`) ?? []
+  )
+
+  // Find the current highest BLY sequential number
+  const { data: lastLead } = await supabase
+    .from('leads')
+    .select('lead_id')
+    .like('lead_id', 'BLY-%')
+    .order('lead_id', { ascending: false })
+    .limit(1)
+  let nextNum = 1
+  if (lastLead && lastLead.length > 0) {
+    const lastNum = parseInt(lastLead[0].lead_id.replace('BLY-', ''), 10)
+    if (!isNaN(lastNum)) nextNum = lastNum + 1
+  }
 
   const toInsert = []
   let skipped = 0
@@ -83,14 +102,24 @@ export async function POST(req: NextRequest) {
       if (dbKey) mapped[dbKey] = val?.trim() || ''
     }
 
-    const leadId = mapped['lead_id']
-    if (!leadId) { skipped++; continue }
-    if (existingIds.has(leadId)) { skipped++; continue }
+    const sourceId = mapped['lead_id'] || null
+    if (sourceId && existingSourceIds.has(sourceId)) { skipped++; continue }
 
-    existingIds.add(leadId)
+    const namePhoneKey = mapped['contact_name'] && mapped['primary_phone']
+      ? `${mapped['contact_name'].toLowerCase().trim()}|${mapped['primary_phone'].trim()}`
+      : null
+    if (namePhoneKey && existingNamePhone.has(namePhoneKey)) { skipped++; continue }
+
+    if (sourceId) existingSourceIds.add(sourceId)
+    if (namePhoneKey) existingNamePhone.add(namePhoneKey)
+
+    const blyId = `BLY-${String(nextNum).padStart(6, '0')}`
+    nextNum++
+
     toInsert.push({
       tier,
-      lead_id:              leadId,
+      lead_id:              blyId,
+      source_lead_id:       sourceId,
       record_date:          mapped['record_date'] || null,
       contact_name:         mapped['contact_name'] || null,
       street_address:       mapped['street_address'] || null,
