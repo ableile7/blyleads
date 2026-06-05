@@ -16,7 +16,6 @@ function detectTier(filename: string): string | null {
 const COLUMN_MAP: Record<string, string> = {
   'Mortgage ID Number':    'lead_id',
   'Campaign Number':       'tier',
-  'Upload Date':           'record_date',
   'Full Name':             'contact_name',
   'address':               'street_address',
   'city':                  'city',
@@ -30,7 +29,6 @@ const COLUMN_MAP: Record<string, string> = {
   'lender':                'financial_institution',
   // Already-renamed headers
   'Lead ID':               'lead_id',
-  'Record Date':           'record_date',
   'Contact Name':          'contact_name',
   'Street Address':        'street_address',
   'City':                  'city',
@@ -120,7 +118,6 @@ export async function POST(req: NextRequest) {
       tier,
       lead_id:               blyId,
       source_lead_id:        sourceId,
-      record_date:           mapped['record_date'] || null,
       contact_name:          mapped['contact_name'] || null,
       street_address:        mapped['street_address'] || null,
       city:                  mapped['city'] || null,

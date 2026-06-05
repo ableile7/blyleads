@@ -5,7 +5,6 @@ import * as XLSX from 'xlsx'
 const DB_TO_CSV: Record<string, string> = {
   lead_id:               'Lead ID',
   tier:                  'List Code',
-  record_date:           'Record Date',
   contact_name:          'Contact Name',
   street_address:        'Street Address',
   city:                  'City',
