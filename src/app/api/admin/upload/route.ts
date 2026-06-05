@@ -28,7 +28,7 @@ const COLUMN_MAP: Record<string, string> = {
   'mortage_amount':        'loan_amount',
   'policy_type':           'coverage_type',
   'lender':                'financial_institution',
-  // Also handle already-renamed headers
+  // Already-renamed headers
   'Lead ID':               'lead_id',
   'Record Date':           'record_date',
   'Contact Name':          'contact_name',
@@ -118,20 +118,20 @@ export async function POST(req: NextRequest) {
 
     toInsert.push({
       tier,
-      lead_id:              blyId,
-      source_lead_id:       sourceId,
-      record_date:          mapped['record_date'] || null,
-      contact_name:         mapped['contact_name'] || null,
-      street_address:       mapped['street_address'] || null,
-      city:                 mapped['city'] || null,
-      state:                mapped['state'] || null,
-      zip_code:             mapped['zip_code'] || null,
-      primary_phone:        mapped['primary_phone'] || null,
-      mobile_phone:         mapped['mobile_phone'] || null,
-      loan_amount:          mapped['loan_amount'] || null,
-      coverage_type:        mapped['coverage_type'] || null,
+      lead_id:               blyId,
+      source_lead_id:        sourceId,
+      record_date:           mapped['record_date'] || null,
+      contact_name:          mapped['contact_name'] || null,
+      street_address:        mapped['street_address'] || null,
+      city:                  mapped['city'] || null,
+      state:                 mapped['state'] || null,
+      zip_code:              mapped['zip_code'] || null,
+      primary_phone:         mapped['primary_phone'] || null,
+      mobile_phone:          mapped['mobile_phone'] || null,
+      loan_amount:           mapped['loan_amount'] || null,
+      coverage_type:         mapped['coverage_type'] || null,
       financial_institution: mapped['financial_institution'] || null,
-      is_sold:              false,
+      is_sold:               false,
     })
   }
 

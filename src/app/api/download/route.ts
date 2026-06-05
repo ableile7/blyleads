@@ -3,18 +3,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 
 const DB_TO_CSV: Record<string, string> = {
-  lead_id: 'Lead ID',
-  tier: 'List Code',
-  record_date: 'Record Date',
-  contact_name: 'Contact Name',
-  street_address: 'Street Address',
-  city: 'City',
-  state: 'State',
-  zip_code: 'ZIP Code',
-  primary_phone: 'Primary Phone',
-  mobile_phone: 'Mobile Phone',
-  loan_amount: 'Loan Amount',
-  coverage_type: 'Coverage Type',
+  lead_id:               'Lead ID',
+  tier:                  'List Code',
+  record_date:           'Record Date',
+  contact_name:          'Contact Name',
+  street_address:        'Street Address',
+  city:                  'City',
+  state:                 'State',
+  zip_code:              'ZIP Code',
+  primary_phone:         'Primary Phone',
+  mobile_phone:          'Mobile Phone',
+  loan_amount:           'Loan Amount',
+  coverage_type:         'Coverage Type',
   financial_institution: 'Financial Institution',
 }
 
