@@ -3,6 +3,32 @@ import { isAdminAuthed } from '@/lib/adminAuth'
 import { NextRequest, NextResponse } from 'next/server'
 import Papa from 'papaparse'
 
+const WORDS = [
+  'apple','bridge','cabin','daisy','eagle','fence','globe','honey','island','jacket',
+  'kite','lemon','maple','noble','ocean','panda','quilt','river','solar','tiger',
+  'umbrella','violet','walnut','xenon','yellow','zebra','amber','brave','cedar','drift',
+  'ember','frost','grape','haven','ivory','jewel','karma','lunar','mango','north',
+  'olive','pearl','quiet','ranch','stone','trout','ultra','vivid','wheat','xylo',
+  'yarrow','zeal','anchor','bloom','cloud','delta','elbow','flint','gravel','hollow',
+  'indigo','jungle','kelp','lantern','meadow','nimble','onyx','prism','quartz','robin',
+  'silver','thorn','urban','velvet','willow','xenial','yarrow','zephyr','acorn','birch',
+  'copper','dune','echo','flare','granite','harbor','iron','jade','kindle','lark',
+  'mossy','neon','opal','pine','quest','reed','swift','terra','umber','vale',
+  'wren','axis','brook','cliff','dawn','edge','forge','glow','haze','inlet',
+]
+
+function randomPhrase(): string {
+  const shuffle = [...WORDS].sort(() => Math.random() - 0.5)
+  return shuffle.slice(0, 3).join(' ')
+}
+
+function uniquePhrase(used: Set<string>): string {
+  let phrase = randomPhrase()
+  while (used.has(phrase)) phrase = randomPhrase()
+  used.add(phrase)
+  return phrase
+}
+
 // Tier detection from filename
 function detectTier(filename: string): string | null {
   const upper = filename.toUpperCase()
@@ -66,13 +92,14 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient()
 
   // Fetch existing records for deduplication by source ID and name+phone
-  const { data: existing } = await supabase.from('leads').select('source_lead_id, contact_name, primary_phone')
+  const { data: existing } = await supabase.from('leads').select('source_lead_id, contact_name, primary_phone, auth_phrase')
   const existingSourceIds = new Set(existing?.map(r => r.source_lead_id).filter(Boolean) ?? [])
   const existingNamePhone = new Set(
     existing
       ?.filter(r => r.contact_name && r.primary_phone)
       .map(r => `${r.contact_name?.toLowerCase().trim()}|${r.primary_phone?.trim()}`) ?? []
   )
+  const usedPhrases = new Set(existing?.map(r => r.auth_phrase).filter(Boolean) ?? [])
 
   // Find the current highest BLY sequential number
   const { data: lastLead } = await supabase
@@ -128,6 +155,7 @@ export async function POST(req: NextRequest) {
       loan_amount:           mapped['loan_amount'] || null,
       coverage_type:         mapped['coverage_type'] || null,
       financial_institution: mapped['financial_institution'] || null,
+      auth_phrase:           uniquePhrase(usedPhrases),
       is_sold:               false,
     })
   }

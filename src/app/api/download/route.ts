@@ -15,6 +15,7 @@ const DB_TO_CSV: Record<string, string> = {
   loan_amount:           'Loan Amount',
   coverage_type:         'Coverage Type',
   financial_institution: 'Financial Institution',
+  auth_phrase:           'Authentication Phrase',
 }
 
 const COLUMNS = Object.values(DB_TO_CSV)
