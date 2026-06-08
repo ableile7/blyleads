@@ -10,6 +10,12 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string }>
   Premier: { badge: 'bg-[#2a0f2e] text-[#d47ef0]', bg: 'bg-[#160b19]', border: 'border-[#7a2d9e]' },
 }
 
+const TIER_INFO: Record<string, { title: string; description: string }> = {
+  Prime:   { title: 'Bronze Replay (2023)', description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
+  Select:  { title: 'Copper Replay (2022)', description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
+  Premier: { title: 'Ruby Replay (2024)',   description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
+}
+
 type Props = {
   tier: Tier
   quantities: Record<string, number>
@@ -43,6 +49,7 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
 
   const tierTotal = Object.values(quantities).reduce((s, q) => s + q, 0)
   const soldOut = tier.available_count === 0
+  const info = TIER_INFO[tier.tier]
 
   return (
     <div className={`rounded-2xl border ${c.border} ${c.bg} p-6 flex flex-col gap-4`}>
@@ -52,6 +59,13 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
           ${tier.price_per_lead}<span className="text-sm font-normal text-slate-400">/lead</span>
         </span>
       </div>
+
+      {info && (
+        <div>
+          <p className="text-sm font-semibold text-slate-200">{info.title}</p>
+          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{info.description}</p>
+        </div>
+      )}
 
       <p className="text-sm text-slate-400">
         <span className="font-semibold text-slate-200">{tier.available_count}</span> total leads available
