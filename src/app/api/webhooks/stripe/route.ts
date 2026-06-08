@@ -17,53 +17,63 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
-    const { agent_id, tier, quantity, price_per_lead } = session.metadata!
-    const qty = parseInt(quantity)
     const supabase = createAdminClient()
 
-    // Find available leads for this tier
-    const { data: leads } = await supabase
-      .from('leads')
-      .select('id')
-      .eq('tier', tier)
-      .eq('is_sold', false)
-      .limit(qty)
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('stripe_session_id', session.id)
+      .eq('status', 'pending')
 
-    if (!leads || leads.length < qty) {
-      console.error('Not enough leads available for order')
-      return NextResponse.json({ error: 'Not enough leads' }, { status: 400 })
+    if (!orders || orders.length === 0) {
+      return NextResponse.json({ received: true })
     }
 
-    const leadIds = leads.map(l => l.id)
     const now = new Date().toISOString()
 
-    // Mark leads as sold
-    await supabase
-      .from('leads')
-      .update({ is_sold: true, sold_to: agent_id, sold_at: now })
-      .in('id', leadIds)
+    for (const order of orders) {
+      let leadsQuery = supabase
+        .from('leads')
+        .select('id')
+        .eq('tier', order.tier)
+        .eq('is_sold', false)
+        .limit(order.quantity)
 
-    // Update order to paid and generate download token
-    await supabase
-      .from('orders')
-      .update({
-        status: 'paid',
-        stripe_payment_intent: session.payment_intent as string,
-      })
-      .eq('stripe_session_id', session.id)
+      if (order.states && order.states.length > 0) {
+        leadsQuery = leadsQuery.in('state', order.states)
+      }
 
-    // Update available_count in pricing
-    const { data: pricing } = await supabase
-      .from('pricing')
-      .select('available_count')
-      .eq('tier', tier)
-      .single()
+      const { data: leads } = await leadsQuery
 
-    if (pricing) {
+      if (!leads || leads.length < order.quantity) {
+        console.error(`Not enough ${order.tier} leads for order ${order.id}`)
+        continue
+      }
+
+      const leadIds = leads.map((l: { id: string }) => l.id)
+
       await supabase
+        .from('leads')
+        .update({ is_sold: true, sold_to: order.agent_id, sold_at: now })
+        .in('id', leadIds)
+
+      await supabase
+        .from('orders')
+        .update({ status: 'paid', stripe_payment_intent: session.payment_intent as string })
+        .eq('id', order.id)
+
+      const { data: pricing } = await supabase
         .from('pricing')
-        .update({ available_count: Math.max(0, pricing.available_count - qty) })
-        .eq('tier', tier)
+        .select('available_count')
+        .eq('tier', order.tier)
+        .single()
+
+      if (pricing) {
+        await supabase
+          .from('pricing')
+          .update({ available_count: Math.max(0, pricing.available_count - order.quantity) })
+          .eq('tier', order.tier)
+      }
     }
   }
 
