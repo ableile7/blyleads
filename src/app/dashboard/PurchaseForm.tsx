@@ -61,10 +61,7 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
       </div>
 
       {info && (
-        <div>
-          <p className="text-sm font-semibold text-slate-200">{info.title}</p>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{info.description}</p>
-        </div>
+        <p className="text-xs text-slate-400 leading-relaxed">{info.description}</p>
       )}
 
       <p className="text-sm text-slate-400">
