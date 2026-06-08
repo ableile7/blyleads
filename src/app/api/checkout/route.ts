@@ -5,13 +5,15 @@ import { randomUUID } from 'crypto'
 
 type CartItem = { tier: string; quantity: number; states?: string[] }
 
+const PROMO_CODES: Record<string, number> = { 'ELG10': 0.10 }
+
 export async function POST(req: NextRequest) {
   const supabase = createClient()
   const adminSupabase = createAdminClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { items }: { items: CartItem[] } = await req.json()
+  const { items, promoCode }: { items: CartItem[]; promoCode?: string } = await req.json()
   if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
@@ -53,8 +55,22 @@ export async function POST(req: NextRequest) {
   const baseUrl = req.headers.get('origin') || 'http://localhost:3000'
   const downloadToken = randomUUID()
 
+  const totalLeads = items.reduce((sum, item) => sum + item.quantity, 0)
   const subtotal = items.reduce((sum, item) => sum + pricingMap[item.tier] * item.quantity, 0)
   const processingFeeCents = Math.round(subtotal * 0.03 * 100)
+
+  // Apply promo discount via Stripe coupon
+  let stripeCoupon: string | undefined
+  const discountPerLead = promoCode ? PROMO_CODES[promoCode.toUpperCase()] : undefined
+  if (discountPerLead) {
+    const coupon = await stripe.coupons.create({
+      amount_off: Math.round(totalLeads * discountPerLead * 100),
+      currency: 'usd',
+      duration: 'once',
+      name: `Promo: ${promoCode!.toUpperCase()}`,
+    })
+    stripeCoupon = coupon.id
+  }
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -83,6 +99,7 @@ export async function POST(req: NextRequest) {
       },
     ],
     mode: 'payment',
+    ...(stripeCoupon ? { discounts: [{ coupon: stripeCoupon }] } : {}),
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/dashboard`,
     metadata: { agent_id: user.id, download_token: downloadToken },

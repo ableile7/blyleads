@@ -4,16 +4,40 @@ import PurchaseForm from './PurchaseForm'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
+const TIER_ORDER = ['Select', 'Prime', 'Premier']
+const PROMO_CODES: Record<string, number> = { 'ELG10': 0.10 }
+
 export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [promoInput, setPromoInput] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(null)
+  const [promoError, setPromoError] = useState('')
+
+  const sortedTiers = [...tiers].sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier))
 
   function updateTier(tier: string, quantities: Record<string, number>) {
     setCart(prev => ({ ...prev, [tier]: quantities }))
   }
 
-  const cartItems = tiers
+  function applyPromo() {
+    const code = promoInput.trim().toUpperCase()
+    if (PROMO_CODES[code]) {
+      setAppliedPromo(code)
+      setPromoError('')
+    } else {
+      setPromoError('Invalid promo code')
+    }
+  }
+
+  function removePromo() {
+    setAppliedPromo(null)
+    setPromoInput('')
+    setPromoError('')
+  }
+
+  const cartItems = sortedTiers
     .map(tier => {
       const quantities = cart[tier.tier] || {}
       const quantity = Object.values(quantities).reduce((s, q) => s + q, 0)
@@ -23,7 +47,9 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
     .filter(item => item.quantity > 0)
 
   const totalLeads = cartItems.reduce((s, i) => s + i.quantity, 0)
-  const totalPrice = cartItems.reduce((s, i) => s + i.quantity * i.pricePerLead, 0)
+  const subtotal = cartItems.reduce((s, i) => s + i.quantity * i.pricePerLead, 0)
+  const discount = appliedPromo ? totalLeads * PROMO_CODES[appliedPromo] : 0
+  const totalPrice = subtotal - discount
 
   async function handleCheckout() {
     if (totalLeads === 0) return
@@ -38,6 +64,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
           quantity: i.quantity,
           states: i.states.length > 0 ? i.states : null,
         })),
+        promoCode: appliedPromo,
       }),
     })
     const data = await res.json()
@@ -48,7 +75,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {tiers.map(tier => (
+        {sortedTiers.map(tier => (
           <PurchaseForm
             key={tier.tier}
             tier={tier}
@@ -78,7 +105,40 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
                 <span className="font-semibold text-white">${(item.quantity * item.pricePerLead).toFixed(2)}</span>
               </div>
             ))}
+
+            {discount > 0 && (
+              <div className="flex items-center justify-between text-sm pt-2 border-t border-white/10">
+                <span className="text-green-400">Promo ({appliedPromo}) −$0.10/lead</span>
+                <span className="font-semibold text-green-400">−${discount.toFixed(2)}</span>
+              </div>
+            )}
           </div>
+
+          {/* Promo code */}
+          {appliedPromo ? (
+            <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-2.5 mb-4">
+              <span className="text-sm text-green-400 font-semibold">{appliedPromo} applied</span>
+              <button onClick={removePromo} className="text-xs text-slate-400 hover:text-white transition">Remove</button>
+            </div>
+          ) : (
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                placeholder="Promo code"
+                value={promoInput}
+                onChange={e => { setPromoInput(e.target.value); setPromoError('') }}
+                onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#2d6af6]"
+              />
+              <button
+                onClick={applyPromo}
+                className="bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+          {promoError && <p className="text-red-400 text-xs mb-3">{promoError}</p>}
 
           {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
 
