@@ -10,10 +10,10 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string }>
   Premier: { badge: 'bg-[#2a0f2e] text-[#d47ef0]', bg: 'bg-[#160b19]', border: 'border-[#7a2d9e]' },
 }
 
-const TIER_INFO: Record<string, { title: string; description: string }> = {
-  Prime:   { title: 'Bronze Replay (2023)', description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
-  Select:  { title: 'Copper Replay (2022)', description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
-  Premier: { title: 'Ruby Replay (2024)',   description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
+const TIER_INFO: Record<string, { year: string; description: string }> = {
+  Prime:   { year: '2023', description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
+  Select:  { year: '2022', description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
+  Premier: { year: '2024', description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
 }
 
 type Props = {
@@ -61,7 +61,10 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
       </div>
 
       {info && (
-        <p className="text-xs text-slate-400 leading-relaxed">{info.description}</p>
+        <div>
+          <span className="text-xs font-semibold text-slate-300">{info.year}</span>
+          <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{info.description}</p>
+        </div>
       )}
 
       <p className="text-sm text-slate-400">
