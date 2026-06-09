@@ -60,7 +60,7 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
       <div className="flex items-center justify-between">
         <span className={`text-xs font-bold px-3 py-1 rounded-full ${c.badge}`}>{tier.tier}</span>
         <span className="text-2xl font-bold text-white">
-          ${tier.price_per_lead}<span className="text-sm font-normal text-slate-400">/lead</span>
+          ${tier.price_per_lead.toFixed(2)}<span className="text-sm font-normal text-slate-400">/lead</span>
         </span>
       </div>
 
