@@ -146,6 +146,8 @@ export default function UploadForm() {
           <div className="flex justify-between"><span className="text-gray-500">Contains BRONZE</span><span className="font-semibold text-[#1F3864]">Prime</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains COPPER</span><span className="font-semibold text-[#2d4a1e]">Select</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains RUBY</span><span className="font-semibold text-[#4a1e3a]">Premier</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains GOLD</span><span className="font-semibold text-yellow-600">Core</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains SILVER</span><span className="font-semibold text-gray-500">Essential</span></div>
         </div>
       </div>
     </div>
