@@ -254,13 +254,16 @@ export async function POST(req: NextRequest) {
     if (!error) inserted += batch.length
   }
 
-  // Step 8: Update available_count in pricing
-  const { data: pricing } = await supabase.from('pricing').select('available_count').eq('tier', tier).single()
-  if (pricing) {
-    await supabase.from('pricing').update({
-      available_count: pricing.available_count + inserted,
-    }).eq('tier', tier)
-  }
+  // Step 8: Sync available_count from actual DB count (always accurate)
+  const { count: actualAvailable } = await supabase
+    .from('leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('tier', tier)
+    .eq('is_sold', false)
+
+  await supabase.from('pricing').update({
+    available_count: actualAvailable ?? 0,
+  }).eq('tier', tier)
 
   return NextResponse.json({ inserted, skipped, tier })
 }
