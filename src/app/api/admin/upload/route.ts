@@ -109,14 +109,16 @@ async function paginateAll<T>(
   supabase: ReturnType<typeof createAdminClient>,
   table: string,
   columns: string,
-  filter?: (q: ReturnType<ReturnType<typeof createAdminClient>['from']>) => ReturnType<ReturnType<typeof createAdminClient>['from']>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filter?: (q: any) => any
 ): Promise<T[]> {
   const results: T[] = []
   let page = 0
   const PAGE = 1000
   while (true) {
-    let q = supabase.from(table).select(columns).range(page, page + PAGE - 1)
-    if (filter) q = filter(q as never) as never
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q: any = supabase.from(table).select(columns).range(page, page + PAGE - 1)
+    if (filter) q = filter(q)
     const { data } = await q
     if (!data || data.length === 0) break
     results.push(...(data as T[]))
