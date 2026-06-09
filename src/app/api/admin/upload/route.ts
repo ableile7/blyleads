@@ -109,17 +109,12 @@ async function paginateAll<T>(
   supabase: ReturnType<typeof createAdminClient>,
   table: string,
   columns: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter?: (q: any) => any
 ): Promise<T[]> {
   const results: T[] = []
   let page = 0
   const PAGE = 1000
   while (true) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q: any = supabase.from(table).select(columns).range(page, page + PAGE - 1)
-    if (filter) q = filter(q)
-    const { data } = await q
+    const { data } = await supabase.from(table).select(columns).range(page, page + PAGE - 1)
     if (!data || data.length === 0) break
     results.push(...(data as T[]))
     if (data.length < PAGE) break
@@ -185,18 +180,18 @@ export async function POST(req: NextRequest) {
   // Step 3: Paginate existing name+phone pairs (2 small columns only)
   const existingNamePhone = new Set<string>()
   const npRows = await paginateAll<{ contact_name: string; primary_phone: string }>(
-    supabase, 'leads', 'contact_name, primary_phone',
-    q => q.not('contact_name', 'is', null).not('primary_phone', 'is', null)
+    supabase, 'leads', 'contact_name, primary_phone'
   )
   npRows.forEach(r => {
-    existingNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
+    if (r.contact_name && r.primary_phone) {
+      existingNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
+    }
   })
 
   // Step 4: Paginate existing auth phrases (1 column only)
   const usedPhrases = new Set<string>()
   const phraseRows = await paginateAll<{ auth_phrase: string }>(
-    supabase, 'leads', 'auth_phrase',
-    q => q.not('auth_phrase', 'is', null)
+    supabase, 'leads', 'auth_phrase'
   )
   phraseRows.forEach(r => { if (r.auth_phrase) usedPhrases.add(r.auth_phrase) })
 
