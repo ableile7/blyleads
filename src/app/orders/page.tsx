@@ -13,10 +13,17 @@ type Order = {
   downloaded_at: string | null
 }
 
-export default async function OrdersPage() {
+export default async function OrdersPage({ searchParams }: { searchParams: { error?: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
+
+  const errorMessages: Record<string, string> = {
+    not_ready: 'Your leads are still being prepared. Please try again in a moment.',
+    no_leads: 'No leads were found for this order. Please contact support.',
+    missing_token: 'Invalid download link. Please use the button below.',
+  }
+  const errorMsg = searchParams.error ? errorMessages[searchParams.error] : null
 
   const { data: orders } = await supabase
     .from('orders')
@@ -47,6 +54,12 @@ export default async function OrdersPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-10">
         <h2 className="text-2xl font-bold text-white mb-8">Order History</h2>
+
+        {errorMsg && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-5 py-4 mb-6 text-sm text-yellow-300">
+            {errorMsg}
+          </div>
+        )}
 
         {sessions.length === 0 ? (
           <div className="bg-[#0f1729] rounded-2xl border border-white/10 p-12 text-center">

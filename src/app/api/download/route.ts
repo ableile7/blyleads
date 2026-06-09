@@ -22,11 +22,11 @@ const COLUMNS = Object.values(DB_TO_CSV)
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')
-  if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+  if (!token) return NextResponse.redirect(new URL('/orders?error=missing_token', req.url))
 
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.redirect(new URL('/', req.url))
 
   const adminSupabase = createAdminClient()
 
@@ -39,28 +39,39 @@ export async function GET(req: NextRequest) {
     .eq('status', 'paid')
 
   if (!orders || orders.length === 0) {
-    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 })
+    return NextResponse.redirect(new URL('/orders?error=not_ready', req.url))
   }
 
   const workbook = XLSX.utils.book_new()
   const now = new Date().toISOString()
 
   for (const order of orders) {
-    const { data: leads } = await adminSupabase
-      .from('leads')
-      .select('*')
-      .eq('sold_to', user.id)
-      .eq('tier', order.tier)
-      .not('sold_at', 'is', null)
-      .order('sold_at', { ascending: false })
-      .limit(order.quantity)
+    // Paginate leads in case quantity > 1000
+    const allLeads: Record<string, unknown>[] = []
+    let page = 0
+    const PAGE = 1000
+    while (allLeads.length < order.quantity) {
+      const remaining = order.quantity - allLeads.length
+      const { data: chunk } = await adminSupabase
+        .from('leads')
+        .select('*')
+        .eq('sold_to', user.id)
+        .eq('tier', order.tier)
+        .not('sold_at', 'is', null)
+        .order('sold_at', { ascending: false })
+        .range(page, page + Math.min(remaining, PAGE) - 1)
+      if (!chunk || chunk.length === 0) break
+      allLeads.push(...chunk)
+      if (chunk.length < PAGE) break
+      page += PAGE
+    }
 
-    if (!leads || leads.length === 0) continue
+    if (allLeads.length === 0) continue
 
-    const rows = leads.map(lead =>
+    const rows = allLeads.map(lead =>
       COLUMNS.map(col => {
         const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
-        return dbKey ? (lead[dbKey] ?? '') : ''
+        return dbKey ? ((lead as Record<string, unknown>)[dbKey] ?? '') : ''
       })
     )
 
@@ -71,6 +82,10 @@ export async function GET(req: NextRequest) {
       .from('orders')
       .update({ downloaded_at: now })
       .eq('id', order.id)
+  }
+
+  if (workbook.SheetNames.length === 0) {
+    return NextResponse.redirect(new URL('/orders?error=no_leads', req.url))
   }
 
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
