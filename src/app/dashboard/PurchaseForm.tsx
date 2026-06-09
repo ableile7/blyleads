@@ -5,15 +5,19 @@ type Tier = { tier: string; price_per_lead: number; available_count: number }
 type StateCount = { state: string; count: number }
 
 const TIER_STYLES: Record<string, { badge: string; bg: string; border: string }> = {
-  Prime:   { badge: 'bg-[#1a3a7a] text-[#7eb3ff]', bg: 'bg-[#0b1628]', border: 'border-[#2d5a9e]' },
-  Select:  { badge: 'bg-[#0f2b14] text-[#7ecc8f]', bg: 'bg-[#0b1a0e]', border: 'border-[#2d7a3e]' },
-  Premier: { badge: 'bg-[#2a0f2e] text-[#d47ef0]', bg: 'bg-[#160b19]', border: 'border-[#7a2d9e]' },
+  Prime:     { badge: 'bg-[#1a3a7a] text-[#7eb3ff]', bg: 'bg-[#0b1628]',  border: 'border-[#2d5a9e]' },
+  Select:    { badge: 'bg-[#0f2b14] text-[#7ecc8f]', bg: 'bg-[#0b1a0e]',  border: 'border-[#2d7a3e]' },
+  Premier:   { badge: 'bg-[#2a0f2e] text-[#d47ef0]', bg: 'bg-[#160b19]',  border: 'border-[#7a2d9e]' },
+  Core:      { badge: 'bg-[#2a1f00] text-[#f0c040]', bg: 'bg-[#181000]',  border: 'border-[#9e7a00]' },
+  Essential: { badge: 'bg-[#1a1a1a] text-[#c0c0c0]', bg: 'bg-[#0f0f0f]',  border: 'border-[#555555]' },
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {
-  Prime:   { year: '2023', description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
-  Select:  { year: '2022', description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
-  Premier: { year: '2024', description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
+  Prime:     { year: '2023',    description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
+  Select:    { year: '2022',    description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
+  Premier:   { year: '2024',    description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
+  Core:      { year: '12+ mo',  description: 'Aged mortgage protection leads, 12+ months. The prospect previously expressed interest in coverage.' },
+  Essential: { year: '36+ mo',  description: 'Aged mortgage protection leads, 36+ months. The prospect previously expressed interest in coverage.' },
 }
 
 type Props = {

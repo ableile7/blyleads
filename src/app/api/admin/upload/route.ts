@@ -35,6 +35,8 @@ function detectTier(filename: string): string | null {
   if (upper.includes('BRONZE')) return 'Prime'
   if (upper.includes('COPPER')) return 'Select'
   if (upper.includes('RUBY'))   return 'Premier'
+  if (upper.includes('GOLD'))   return 'Core'
+  if (upper.includes('SILVER')) return 'Essential'
   return null
 }
 

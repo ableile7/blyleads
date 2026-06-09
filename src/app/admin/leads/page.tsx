@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 
-const TIERS = ['Prime', 'Select', 'Premier']
+const TIERS = ['Select', 'Prime', 'Premier', 'Essential', 'Core']
 
 export default async function AdminLeadsPage() {
   const supabase = createAdminClient()
@@ -15,9 +15,11 @@ export default async function AdminLeadsPage() {
   }))
 
   const TIER_STYLES: Record<string, { badge: string; bar: string }> = {
-    Prime:   { badge: 'bg-[#1F3864] text-white', bar: 'bg-[#3b7abf]' },
-    Select:  { badge: 'bg-[#2d4a1e] text-white', bar: 'bg-[#5a9e3a]' },
-    Premier: { badge: 'bg-[#4a1e3a] text-white', bar: 'bg-[#9e3a7a]' },
+    Prime:     { badge: 'bg-[#1F3864] text-white', bar: 'bg-[#3b7abf]' },
+    Select:    { badge: 'bg-[#2d4a1e] text-white', bar: 'bg-[#5a9e3a]' },
+    Premier:   { badge: 'bg-[#4a1e3a] text-white', bar: 'bg-[#9e3a7a]' },
+    Core:      { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
+    Essential: { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
   }
 
   return (

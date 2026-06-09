@@ -4,7 +4,13 @@ import PurchaseForm from './PurchaseForm'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
-const TIER_ORDER = ['Select', 'Prime', 'Premier']
+const TIER_ORDER = ['Select', 'Prime', 'Premier', 'Essential', 'Core']
+
+const TIER_CATEGORY: Record<string, string> = {
+  Select: 'Aged Mortgage Protection', Prime: 'Aged Mortgage Protection',
+  Premier: 'Aged Mortgage Protection', Core: 'Aged Mortgage Protection',
+  Essential: 'Aged Mortgage Protection',
+}
 const PROMO_CODES: Record<string, number> = { 'ELG10': 0.10 }
 
 export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
@@ -74,16 +80,30 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {sortedTiers.map(tier => (
-          <PurchaseForm
-            key={tier.tier}
-            tier={tier}
-            quantities={cart[tier.tier] || {}}
-            onQuantitiesChange={q => updateTier(tier.tier, q)}
-          />
-        ))}
-      </div>
+      {Object.entries(
+        sortedTiers.reduce<Record<string, typeof sortedTiers>>((acc, tier) => {
+          const cat = TIER_CATEGORY[tier.tier] || 'Other'
+          acc[cat] = acc[cat] ? [...acc[cat], tier] : [tier]
+          return acc
+        }, {})
+      ).map(([category, categoryTiers]) => (
+        <div key={category}>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{category}</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {categoryTiers.map(tier => (
+              <PurchaseForm
+                key={tier.tier}
+                tier={tier}
+                quantities={cart[tier.tier] || {}}
+                onQuantitiesChange={q => updateTier(tier.tier, q)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
 
       {totalLeads > 0 && (
         <div className="bg-[#0f1729] border border-white/10 rounded-2xl shadow-sm p-6">
