@@ -95,7 +95,7 @@ export default function UploadForm() {
           ) : (
             <>
               <p className="text-sm font-semibold text-gray-600">Drop files here or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">Multiple files supported — filenames must contain BRONZE, COPPER, or RUBY</p>
+              <p className="text-xs text-gray-400 mt-1">Multiple files supported — filenames must contain BRONZE, COPPER, RUBY, GOLD, or SILVER</p>
             </>
           )}
           <input ref={fileRef} type="file" accept=".csv" multiple className="hidden" onChange={handleSelect} />
