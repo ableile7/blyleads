@@ -52,10 +52,15 @@ export async function POST(req: NextRequest) {
 
       const leadIds = leads.map((l: { id: string }) => l.id)
 
-      await supabase
+      const { error: updateLeadsError } = await supabase
         .from('leads')
         .update({ is_sold: true, sold_to: order.agent_id, sold_at: now })
         .in('id', leadIds)
+
+      if (updateLeadsError) {
+        console.error(`Failed to assign leads for order ${order.id}:`, updateLeadsError)
+        continue
+      }
 
       await supabase
         .from('orders')
