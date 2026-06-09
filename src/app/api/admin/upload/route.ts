@@ -3,6 +3,8 @@ import { isAdminAuthed } from '@/lib/adminAuth'
 import { NextRequest, NextResponse } from 'next/server'
 import Papa from 'papaparse'
 
+export const maxDuration = 300 // 5 minutes on Vercel Pro
+
 const WORDS = [
   'apple','bridge','cabin','daisy','eagle','fence','globe','honey','island','jacket',
   'kite','lemon','maple','noble','ocean','panda','quilt','river','solar','tiger',
@@ -29,7 +31,6 @@ function uniquePhrase(used: Set<string>): string {
   return phrase
 }
 
-// Tier detection from filename
 function detectTier(filename: string): string | null {
   const upper = filename.toUpperCase()
   if (upper.includes('BRONZE')) return 'Prime'
@@ -40,7 +41,6 @@ function detectTier(filename: string): string | null {
   return null
 }
 
-// Column rename map from spec
 const COLUMN_MAP: Record<string, string> = {
   'Mortgage ID Number':    'lead_id',
   'Campaign Number':       'tier',
@@ -55,7 +55,6 @@ const COLUMN_MAP: Record<string, string> = {
   'mortage_amount':        'loan_amount',
   'policy_type':           'coverage_type',
   'lender':                'financial_institution',
-  // Already-renamed headers
   'Lead ID':               'lead_id',
   'Contact Name':          'contact_name',
   'Street Address':        'street_address',
@@ -71,6 +70,27 @@ const COLUMN_MAP: Record<string, string> = {
 
 const DROP_COLUMNS = new Set(['landline', 'gender', 'education'])
 
+async function paginateAll<T>(
+  supabase: ReturnType<typeof createAdminClient>,
+  table: string,
+  columns: string,
+  filter?: (q: ReturnType<ReturnType<typeof createAdminClient>['from']>) => ReturnType<ReturnType<typeof createAdminClient>['from']>
+): Promise<T[]> {
+  const results: T[] = []
+  let page = 0
+  const PAGE = 1000
+  while (true) {
+    let q = supabase.from(table).select(columns).range(page, page + PAGE - 1)
+    if (filter) q = filter(q as never) as never
+    const { data } = await q
+    if (!data || data.length === 0) break
+    results.push(...(data as T[]))
+    if (data.length < PAGE) break
+    page += PAGE
+  }
+  return results
+}
+
 export async function POST(req: NextRequest) {
   if (!isAdminAuthed()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -79,7 +99,7 @@ export async function POST(req: NextRequest) {
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
   const tier = detectTier(file.name)
-  if (!tier) return NextResponse.json({ error: 'Filename must contain BRONZE, COPPER, or RUBY to detect tier' }, { status: 400 })
+  if (!tier) return NextResponse.json({ error: 'Filename must contain BRONZE, COPPER, RUBY, GOLD, or SILVER to detect tier' }, { status: 400 })
 
   const text = await file.text()
   const { data: rows, errors } = Papa.parse<Record<string, string>>(text, {
@@ -93,34 +113,8 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // Fetch existing records for deduplication by source ID and name+phone
-  const { data: existing } = await supabase.from('leads').select('source_lead_id, contact_name, primary_phone, auth_phrase')
-  const existingSourceIds = new Set(existing?.map(r => r.source_lead_id).filter(Boolean) ?? [])
-  const existingNamePhone = new Set(
-    existing
-      ?.filter(r => r.contact_name && r.primary_phone)
-      .map(r => `${r.contact_name?.toLowerCase().trim()}|${r.primary_phone?.trim()}`) ?? []
-  )
-  const usedPhrases = new Set(existing?.map(r => r.auth_phrase).filter(Boolean) ?? [])
-
-  // Find the current highest BLY sequential number
-  const { data: lastLead } = await supabase
-    .from('leads')
-    .select('lead_id')
-    .like('lead_id', 'BLY-%')
-    .order('lead_id', { ascending: false })
-    .limit(1)
-  let nextNum = 1
-  if (lastLead && lastLead.length > 0) {
-    const lastNum = parseInt(lastLead[0].lead_id.replace('BLY-', ''), 10)
-    if (!isNaN(lastNum)) nextNum = lastNum + 1
-  }
-
-  const toInsert = []
-  let skipped = 0
-
-  for (const row of rows) {
-    // Remap columns
+  // Step 1: Map all rows up front
+  const mappedRows: Record<string, string>[] = rows.map(row => {
     const mapped: Record<string, string> = {}
     for (const [origKey, val] of Object.entries(row)) {
       const trimmedKey = origKey.trim()
@@ -128,7 +122,51 @@ export async function POST(req: NextRequest) {
       const dbKey = COLUMN_MAP[trimmedKey]
       if (dbKey) mapped[dbKey] = val?.trim() || ''
     }
+    return mapped
+  })
 
+  // Step 2: Check only source_lead_ids from THIS batch against DB (efficient)
+  const batchSourceIds = mappedRows.map(r => r['lead_id']).filter(Boolean)
+  const existingSourceIds = new Set<string>()
+  for (let i = 0; i < batchSourceIds.length; i += 1000) {
+    const chunk = batchSourceIds.slice(i, i + 1000)
+    const { data } = await supabase.from('leads').select('source_lead_id').in('source_lead_id', chunk)
+    data?.forEach((r: { source_lead_id: string }) => { if (r.source_lead_id) existingSourceIds.add(r.source_lead_id) })
+  }
+
+  // Step 3: Paginate existing name+phone pairs (2 small columns only)
+  const existingNamePhone = new Set<string>()
+  const npRows = await paginateAll<{ contact_name: string; primary_phone: string }>(
+    supabase, 'leads', 'contact_name, primary_phone',
+    q => q.not('contact_name', 'is', null).not('primary_phone', 'is', null)
+  )
+  npRows.forEach(r => {
+    existingNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
+  })
+
+  // Step 4: Paginate existing auth phrases (1 column only)
+  const usedPhrases = new Set<string>()
+  const phraseRows = await paginateAll<{ auth_phrase: string }>(
+    supabase, 'leads', 'auth_phrase',
+    q => q.not('auth_phrase', 'is', null)
+  )
+  phraseRows.forEach(r => { if (r.auth_phrase) usedPhrases.add(r.auth_phrase) })
+
+  // Step 5: Get last BLY number
+  const { data: lastLead } = await supabase
+    .from('leads').select('lead_id').like('lead_id', 'BLY-%')
+    .order('lead_id', { ascending: false }).limit(1)
+  let nextNum = 1
+  if (lastLead && lastLead.length > 0) {
+    const lastNum = parseInt(lastLead[0].lead_id.replace('BLY-', ''), 10)
+    if (!isNaN(lastNum)) nextNum = lastNum + 1
+  }
+
+  // Step 6: Filter duplicates and build insert list
+  const toInsert = []
+  let skipped = 0
+
+  for (const mapped of mappedRows) {
     const sourceId = mapped['lead_id'] || null
     if (sourceId && existingSourceIds.has(sourceId)) { skipped++; continue }
 
@@ -162,7 +200,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Insert in batches of 500
+  // Step 7: Insert in batches of 500
   let inserted = 0
   for (let i = 0; i < toInsert.length; i += 500) {
     const batch = toInsert.slice(i, i + 500)
@@ -170,7 +208,7 @@ export async function POST(req: NextRequest) {
     if (!error) inserted += batch.length
   }
 
-  // Update available_count in pricing
+  // Step 8: Update available_count in pricing
   const { data: pricing } = await supabase.from('pricing').select('available_count').eq('tier', tier).single()
   if (pricing) {
     await supabase.from('pricing').update({
