@@ -41,34 +41,69 @@ function detectTier(filename: string): string | null {
   return null
 }
 
-const COLUMN_MAP: Record<string, string> = {
-  'Mortgage ID Number':    'lead_id',
-  'Campaign Number':       'tier',
-  'Full Name':             'contact_name',
-  'address':               'street_address',
-  'city':                  'city',
-  'state':                 'state',
-  'zip_plus_four':         'zip_code',
-  'landline_cell_combo':   'primary_phone',
-  'recent_landline_1':     'secondary_phone',
-  'cell_phone':            'mobile_phone',
-  'mortage_amount':        'loan_amount',
-  'policy_type':           'coverage_type',
-  'lender':                'financial_institution',
-  'Lead ID':               'lead_id',
-  'Contact Name':          'contact_name',
-  'Street Address':        'street_address',
-  'City':                  'city',
-  'State':                 'state',
-  'ZIP Code':              'zip_code',
-  'Primary Phone':         'primary_phone',
-  'Mobile Phone':          'mobile_phone',
-  'Loan Amount':           'loan_amount',
-  'Coverage Type':         'coverage_type',
-  'Financial Institution': 'financial_institution',
+// Normalize a header to lowercase letters/digits only for fuzzy matching
+function norm(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-const DROP_COLUMNS = new Set(['landline', 'gender', 'education'])
+// Keyword groups for each DB field — first match wins
+const FIELD_KEYWORDS: Record<string, string[]> = {
+  lead_id:               ['mortgageid','mortgageidnumber','leadid','sourceleadid','recordid','sourceid','prospectid','clientid'],
+  contact_name:          ['fullname','contactname','name','clientname','customername','prospectname'],
+  first_name:            ['firstname','fname'],
+  last_name:             ['lastname','lname','surname'],
+  street_address:        ['streetaddress','address1','streetaddr','address','street','addr'],
+  city:                  ['city','town'],
+  state:                 ['state','st','statecode','province'],
+  zip_code:              ['zipcode','zip4','zipplusfour','zip','postalcode','postal'],
+  primary_phone:         ['landlinecellcombo','primaryphone','phonenumber','homephone','phone1','phone'],
+  secondary_phone:       ['recentlandline','secondaryphone','phone2','altphone','landline'],
+  mobile_phone:          ['cellphone','mobilephone','wireless','mobile','cell'],
+  loan_amount:           ['mortgageamount','mortageamount','loanamount','loanamt','amount'],
+  coverage_type:         ['policytype','coveragetype','coverage','policy','producttype'],
+  financial_institution: ['financialinstitution','mortgagecompany','lender','bank','institution','servicer'],
+}
+
+const DROP_KEYWORDS = new Set(['gender','education','timezone','timzone','areacode','dob','dateofbirth','tobaccouser','healthnotes','spanishspeaking','recorddate'])
+
+function buildColumnMap(headers: string[]): Record<string, string> {
+  const map: Record<string, string> = {}
+  const firstNameCol: string[] = []
+  const lastNameCol: string[] = []
+
+  for (const header of headers) {
+    const n = norm(header)
+    if (DROP_KEYWORDS.has(n)) continue
+
+    let matched = false
+    for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
+      if (keywords.includes(n)) {
+        if (field === 'first_name') { firstNameCol.push(header); matched = true; break }
+        if (field === 'last_name')  { lastNameCol.push(header);  matched = true; break }
+        map[header] = field
+        matched = true
+        break
+      }
+    }
+    // Partial match fallback — check if any keyword is contained in the normalized header
+    if (!matched) {
+      for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
+        if (keywords.some(k => n.includes(k) || k.includes(n))) {
+          if (field === 'first_name') { firstNameCol.push(header); break }
+          if (field === 'last_name')  { lastNameCol.push(header);  break }
+          map[header] = field
+          break
+        }
+      }
+    }
+  }
+
+  // Store first/last name columns separately for combining later
+  if (firstNameCol.length) map['__first_name__'] = firstNameCol[0]
+  if (lastNameCol.length)  map['__last_name__']  = lastNameCol[0]
+
+  return map
+}
 
 async function paginateAll<T>(
   supabase: ReturnType<typeof createAdminClient>,
@@ -113,14 +148,25 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
+  // Step 1: Build column map from actual headers in this file
+  const headers = rows.length > 0 ? Object.keys(rows[0]) : []
+  const colMap = buildColumnMap(headers)
+  const firstNameCol = colMap['__first_name__']
+  const lastNameCol  = colMap['__last_name__']
+
   // Step 1: Map all rows up front
   const mappedRows: Record<string, string>[] = rows.map(row => {
     const mapped: Record<string, string> = {}
     for (const [origKey, val] of Object.entries(row)) {
       const trimmedKey = origKey.trim()
-      if (DROP_COLUMNS.has(trimmedKey.toLowerCase())) continue
-      const dbKey = COLUMN_MAP[trimmedKey]
-      if (dbKey) mapped[dbKey] = val?.trim() || ''
+      const dbKey = colMap[trimmedKey]
+      if (dbKey && !dbKey.startsWith('__')) mapped[dbKey] = val?.trim() || ''
+    }
+    // Combine first + last name into contact_name if no full name column found
+    if (!mapped['contact_name'] && (firstNameCol || lastNameCol)) {
+      const first = (firstNameCol ? (row as Record<string,string>)[firstNameCol]?.trim() : '') || ''
+      const last  = (lastNameCol  ? (row as Record<string,string>)[lastNameCol]?.trim()  : '') || ''
+      mapped['contact_name'] = [first, last].filter(Boolean).join(' ')
     }
     return mapped
   })
