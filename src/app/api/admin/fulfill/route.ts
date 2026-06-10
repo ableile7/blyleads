@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthed } from '@/lib/adminAuth'
+import { fetchAvailableLeadIds, markLeadsSold } from '@/lib/fulfillment'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -22,32 +23,20 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString()
 
   for (const order of orders) {
-    // Find available leads filtered by state if applicable
-    let leadsQuery = supabase
-      .from('leads')
-      .select('id')
-      .eq('tier', order.tier)
-      .eq('is_sold', false)
-      .limit(order.quantity)
+    const leadIds = await fetchAvailableLeadIds(supabase, order.tier, order.states, order.quantity)
 
-    if (order.states && order.states.length > 0) {
-      leadsQuery = leadsQuery.in('state', order.states)
-    }
-
-    const { data: leads } = await leadsQuery
-
-    if (!leads || leads.length < order.quantity) {
+    if (leadIds.length < order.quantity) {
       return NextResponse.json({
-        error: `Only ${leads?.length ?? 0} ${order.tier} leads available, need ${order.quantity}`,
+        error: `Only ${leadIds.length} ${order.tier} leads available, need ${order.quantity}`,
       }, { status: 400 })
     }
 
-    const leadIds = leads.map(l => l.id)
-
-    await supabase
-      .from('leads')
-      .update({ is_sold: true, sold_to: order.agent_id, sold_at: now })
-      .in('id', leadIds)
+    const updateError = await markLeadsSold(supabase, leadIds, order.agent_id, now)
+    if (updateError) {
+      return NextResponse.json({
+        error: `Failed to assign ${order.tier} leads: ${updateError.message}`,
+      }, { status: 500 })
+    }
 
     await supabase
       .from('orders')

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
+import { fetchAvailableLeadIds, markLeadsSold } from '@/lib/fulfillment'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -32,31 +33,14 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString()
 
     for (const order of orders) {
-      let leadsQuery = supabase
-        .from('leads')
-        .select('id')
-        .eq('tier', order.tier)
-        .eq('is_sold', false)
-        .limit(order.quantity)
+      const leadIds = await fetchAvailableLeadIds(supabase, order.tier, order.states, order.quantity)
 
-      if (order.states && order.states.length > 0) {
-        leadsQuery = leadsQuery.in('state', order.states)
-      }
-
-      const { data: leads } = await leadsQuery
-
-      if (!leads || leads.length < order.quantity) {
-        console.error(`Not enough ${order.tier} leads for order ${order.id}`)
+      if (leadIds.length < order.quantity) {
+        console.error(`Not enough ${order.tier} leads for order ${order.id}: found ${leadIds.length}, need ${order.quantity}`)
         continue
       }
 
-      const leadIds = leads.map((l: { id: string }) => l.id)
-
-      const { error: updateLeadsError } = await supabase
-        .from('leads')
-        .update({ is_sold: true, sold_to: order.agent_id, sold_at: now })
-        .in('id', leadIds)
-
+      const updateLeadsError = await markLeadsSold(supabase, leadIds, order.agent_id, now)
       if (updateLeadsError) {
         console.error(`Failed to assign leads for order ${order.id}:`, updateLeadsError)
         continue
