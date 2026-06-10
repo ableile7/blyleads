@@ -26,51 +26,52 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080e1c] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ambient flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="BlyLeads" className="w-72 mx-auto" />
+        <div className="text-center mb-10">
+          <img src="/logo.png" alt="BlyLeads" className="w-80 mx-auto drop-shadow-[0_0_28px_rgba(45,106,246,0.35)]" />
+          <p className="label-premium mt-4">Private Lead Exchange</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Sign In</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
+        <div className="glass-card p-8">
+          <h2 className="text-lg font-semibold text-chrome tracking-wide mb-6">Sign In</h2>
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="label-premium block mb-2">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6af6]"
+                className="input-dark w-full px-4 py-3 text-sm"
                 placeholder="you@example.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="label-premium block mb-2">Password</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d6af6]"
+                className="input-dark w-full px-4 py-3 text-sm"
                 placeholder="••••••••"
               />
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-400 text-sm">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#2d6af6] text-white rounded-lg py-2.5 font-semibold hover:bg-[#1a55db] transition disabled:opacity-50"
+              className="btn-premium w-full text-white rounded-xl py-3 font-semibold text-sm tracking-wide"
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="mt-7 pt-6 border-t border-white/10 text-center">
+            <p className="text-sm text-slate-400">
               Don&apos;t have an account?{' '}
-              <a href="/signup" className="text-[#2d6af6] font-semibold hover:underline">
+              <a href="/signup" className="text-[#7eb3ff] font-semibold hover:text-white transition">
                 Request Access
               </a>
             </p>

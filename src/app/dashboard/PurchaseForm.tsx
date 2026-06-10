@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 type StateCount = { state: string; count: number }
 
-const TIER_STYLES: Record<string, { badge: string; bg: string; border: string }> = {
-  Prime:     { badge: 'bg-[#1a3a7a] text-[#7eb3ff]', bg: 'bg-[#0b1628]',  border: 'border-[#2d5a9e]' },
-  Select:    { badge: 'bg-[#0f2b14] text-[#7ecc8f]', bg: 'bg-[#0b1a0e]',  border: 'border-[#2d7a3e]' },
-  Premier:   { badge: 'bg-[#2a0f2e] text-[#d47ef0]', bg: 'bg-[#160b19]',  border: 'border-[#7a2d9e]' },
-  Core:      { badge: 'bg-[#2a1f00] text-[#f0c040]', bg: 'bg-[#181000]',  border: 'border-[#9e7a00]' },
-  Essential: { badge: 'bg-[#1a1a1a] text-[#c0c0c0]', bg: 'bg-[#0f0f0f]',  border: 'border-[#555555]' },
+const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; glow: string }> = {
+  Prime:     { badge: 'bg-[#1a3a7a]/80 text-[#7eb3ff] border border-[#2d5a9e]/50', bg: 'bg-gradient-to-b from-[#0c1830]/90 to-[#070d1a]/95', border: 'border-[#2d5a9e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(45,106,246,0.4)]' },
+  Select:    { badge: 'bg-[#0f2b14]/80 text-[#7ecc8f] border border-[#2d7a3e]/50', bg: 'bg-gradient-to-b from-[#0c1f10]/90 to-[#060f08]/95', border: 'border-[#2d7a3e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(60,180,90,0.35)]' },
+  Premier:   { badge: 'bg-[#2a0f2e]/80 text-[#d47ef0] border border-[#7a2d9e]/50', bg: 'bg-gradient-to-b from-[#1c0e20]/90 to-[#0e0612]/95', border: 'border-[#7a2d9e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(170,80,220,0.4)]' },
+  Core:      { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
+  Essential: { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {
@@ -56,23 +56,23 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
   const info = TIER_INFO[tier.tier]
 
   return (
-    <div className={`rounded-2xl border ${c.border} ${c.bg} p-6 flex flex-col gap-4`}>
+    <div className={`rounded-2xl border ${c.border} ${c.bg} ${c.glow} backdrop-blur-sm p-6 flex flex-col gap-4 transition-shadow duration-300`}>
       <div className="flex items-center justify-between">
-        <span className={`text-xs font-bold px-3 py-1 rounded-full ${c.badge}`}>{tier.tier}</span>
-        <span className="text-2xl font-bold text-white">
-          ${tier.price_per_lead.toFixed(2)}<span className="text-sm font-normal text-slate-400">/lead</span>
+        <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${c.badge}`}>{tier.tier}</span>
+        <span className="text-2xl font-bold text-chrome">
+          ${tier.price_per_lead.toFixed(2)}<span className="text-sm font-normal text-slate-500">/lead</span>
         </span>
       </div>
 
       {info && (
         <div>
-          <span className="text-xs font-semibold text-slate-300">{info.year}</span>
-          <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{info.description}</p>
+          <span className="label-premium">{info.year}</span>
+          <p className="text-xs text-slate-400 leading-relaxed mt-1">{info.description}</p>
         </div>
       )}
 
       <p className="text-sm text-slate-400">
-        <span className="font-semibold text-slate-200">{tier.available_count}</span> total leads available
+        <span className="font-semibold text-slate-200">{tier.available_count.toLocaleString()}</span> total leads available
       </p>
 
       {soldOut ? (
@@ -108,7 +108,7 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
                       value={quantities[state] || ''}
                       placeholder="0"
                       onChange={e => setQty(state, parseInt(e.target.value) || 0, count)}
-                      className="w-16 text-center text-sm bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-[#2d6af6] placeholder-slate-600"
+                      className="input-dark w-16 text-center text-sm px-2 py-1"
                     />
                   </div>
                 ))}

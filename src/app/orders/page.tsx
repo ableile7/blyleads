@@ -41,19 +41,20 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
   const sessions = Array.from(sessionMap.values())
 
   return (
-    <div className="min-h-screen bg-[#080e1c]">
-      <header className="bg-[#080e1c] border-b border-white/10 text-white px-6 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-ambient">
+      <header className="sticky top-0 z-20 backdrop-blur-xl bg-[#04070e]/70 border-b border-white/10 text-white px-6 py-3 flex items-center justify-between">
         <img src="/logo.png" alt="BlyLeads" className="h-10" />
-        <div className="flex items-center gap-4">
-          <a href="/dashboard" className="text-sm text-blue-200 hover:text-white transition">Dashboard</a>
-          <a href="/api/auth/signout" className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
+        <div className="flex items-center gap-5">
+          <a href="/dashboard" className="text-sm text-slate-300 hover:text-white transition">Dashboard</a>
+          <a href="/api/auth/signout" className="text-sm bg-white/5 border border-white/15 hover:bg-white/10 hover:border-white/25 px-4 py-1.5 rounded-lg transition">
             Sign Out
           </a>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <h2 className="text-2xl font-bold text-white mb-8">Order History</h2>
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        <p className="label-premium mb-2">Account</p>
+        <h2 className="text-3xl font-bold text-chrome tracking-wide mb-8">Order History</h2>
 
         {errorMsg && (
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-5 py-4 mb-6 text-sm text-yellow-300">
@@ -62,9 +63,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
         )}
 
         {sessions.length === 0 ? (
-          <div className="bg-[#0f1729] rounded-2xl border border-white/10 p-12 text-center">
+          <div className="glass-card p-12 text-center">
             <p className="text-slate-400">No orders yet.</p>
-            <a href="/dashboard" className="mt-4 inline-block text-[#2d6af6] font-semibold text-sm hover:underline">
+            <a href="/dashboard" className="mt-4 inline-block text-[#7eb3ff] font-semibold text-sm hover:text-white transition">
               Browse leads →
             </a>
           </div>
@@ -80,7 +81,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
 
               return (
-                <div key={first.stripe_session_id || first.id} className="bg-[#0f1729] rounded-2xl border border-white/10 p-6">
+                <div key={first.stripe_session_id || first.id} className="glass-card p-6">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -95,11 +96,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
-                      <p className="font-bold text-white text-lg">${totalAmount.toFixed(2)}</p>
+                      <p className="font-bold text-chrome text-lg">${totalAmount.toFixed(2)}</p>
                       {allPaid && downloadToken && (
                         <a
                           href={`/api/download?token=${downloadToken}`}
-                          className="bg-[#2d6af6] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#1a55db] transition"
+                          className="btn-premium text-white text-sm font-semibold px-4 py-2 rounded-lg"
                         >
                           {wasDownloaded ? 'Re-Download' : 'Download Excel'}
                         </a>
@@ -129,12 +130,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    Prime:   'bg-[#1a3a7a] text-[#7eb3ff]',
-    Select:  'bg-[#0f2b14] text-[#7ecc8f]',
-    Premier: 'bg-[#2a0f2e] text-[#d47ef0]',
+    Prime:     'bg-[#1a3a7a]/80 text-[#7eb3ff] border border-[#2d5a9e]/50',
+    Select:    'bg-[#0f2b14]/80 text-[#7ecc8f] border border-[#2d7a3e]/50',
+    Premier:   'bg-[#2a0f2e]/80 text-[#d47ef0] border border-[#7a2d9e]/50',
+    Core:      'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
+    Essential: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50',
   }
   return (
-    <span className={`text-xs font-bold px-3 py-1 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
       {tier}
     </span>
   )
@@ -142,9 +145,9 @@ function TierBadge({ tier }: { tier: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    paid:    'text-green-600',
-    pending: 'text-yellow-600',
-    failed:  'text-red-500',
+    paid:    'text-green-400',
+    pending: 'text-yellow-400',
+    failed:  'text-red-400',
   }
-  return <span className={`text-xs font-semibold capitalize ${styles[status] || 'text-gray-400'}`}>{status}</span>
+  return <span className={`text-xs font-semibold capitalize ${styles[status] || 'text-slate-400'}`}>{status}</span>
 }

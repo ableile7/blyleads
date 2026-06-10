@@ -89,8 +89,8 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
       ).map(([category, categoryTiers]) => (
         <div key={category}>
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{category}</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <span className="label-premium">{category}</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {categoryTiers.map(tier => (
@@ -106,10 +106,10 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
       ))}
 
       {totalLeads > 0 && (
-        <div className="bg-[#0f1729] border border-white/10 rounded-2xl shadow-sm p-6">
+        <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white text-lg">Cart Summary</h3>
-            <span className="text-2xl font-bold text-white">${totalPrice.toFixed(2)}</span>
+            <h3 className="font-bold text-chrome text-lg tracking-wide">Cart Summary</h3>
+            <span className="text-2xl font-bold text-chrome">${totalPrice.toFixed(2)}</span>
           </div>
 
           <div className="space-y-2 mb-5">
@@ -148,7 +148,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
                 value={promoInput}
                 onChange={e => { setPromoInput(e.target.value); setPromoError('') }}
                 onKeyDown={e => e.key === 'Enter' && applyPromo()}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#2d6af6]"
+                className="input-dark flex-1 px-3 py-2 text-sm"
               />
               <button
                 onClick={applyPromo}
@@ -165,7 +165,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
           <button
             onClick={handleCheckout}
             disabled={loading}
-            className="w-full bg-[#2d6af6] hover:bg-[#1a55db] text-white font-bold py-3 rounded-xl transition disabled:opacity-50 text-sm"
+            className="btn-premium w-full text-white font-bold py-3 rounded-xl text-sm tracking-wide"
           >
             {loading ? 'Redirecting to checkout…' : `Purchase ${totalLeads} Lead${totalLeads !== 1 ? 's' : ''} — $${totalPrice.toFixed(2)}`}
           </button>
@@ -177,12 +177,14 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    Prime:   'bg-[#1a3a7a] text-[#7eb3ff]',
-    Select:  'bg-[#0f2b14] text-[#7ecc8f]',
-    Premier: 'bg-[#2a0f2e] text-[#d47ef0]',
+    Prime:     'bg-[#1a3a7a]/80 text-[#7eb3ff] border border-[#2d5a9e]/50',
+    Select:    'bg-[#0f2b14]/80 text-[#7ecc8f] border border-[#2d7a3e]/50',
+    Premier:   'bg-[#2a0f2e]/80 text-[#d47ef0] border border-[#7a2d9e]/50',
+    Core:      'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
+    Essential: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50',
   }
   return (
-    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
+    <span className={`text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
       {tier}
     </span>
   )
