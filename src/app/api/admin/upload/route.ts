@@ -49,27 +49,41 @@ function norm(s: string): string {
 // Keyword groups for each DB field — first match wins
 const FIELD_KEYWORDS: Record<string, string[]> = {
   lead_id:               ['mortgageid','mortgageidnumber','leadid','sourceleadid','recordid','sourceid','prospectid','clientid'],
-  contact_name:          ['fullname','contactname','name','clientname','customername','prospectname'],
+  contact_name:          ['fullname','contactname','name','clientname','customername','prospectname','borrowername','borrower'],
   first_name:            ['firstname','fname'],
   last_name:             ['lastname','lname','surname'],
   street_address:        ['streetaddress','address1','streetaddr','address','street','addr'],
   city:                  ['city','town'],
   state:                 ['state','st','statecode','province'],
   zip_code:              ['zipcode','zip4','zipplusfour','zip','postalcode','postal'],
-  primary_phone:         ['landlinecellcombo','primaryphone','phonenumber','homephone','phone1','phone'],
-  secondary_phone:       ['recentlandline','secondaryphone','phone2','altphone','landline'],
-  mobile_phone:          ['cellphone','mobilephone','wireless','mobile','cell'],
+  primary_phone:         ['landlinecellcombo','primaryphone','phonenumber','homephone','phone1','phone','callerno','callernumber','caller'],
+  secondary_phone:       ['recentlandline','secondaryphone','phone2','landline'],
+  mobile_phone:          ['cellphone','mobilephone','wireless','mobile','cell','alternatephoneno','alternatephone','altphone'],
   loan_amount:           ['mortgageamount','mortageamount','loanamount','loanamt','amount'],
   coverage_type:         ['policytype','coveragetype','coverage','policy','producttype'],
   financial_institution: ['financialinstitution','mortgagecompany','lender','bank','institution','servicer'],
 }
 
-const DROP_KEYWORDS = new Set(['gender','education','timezone','timzone','areacode','dob','dateofbirth','tobaccouser','healthnotes','spanishspeaking','recorddate'])
+const DROP_KEYWORDS = new Set([
+  'gender','education','timezone','timzone','areacode','dob','dateofbirth','tobaccouser','healthnotes','spanishspeaking','recorddate',
+  'county','callintime','borrowerage','borrowermedicalissues','borrowertobacco','coborrower','closingdate','lastaction',
+])
 
 function buildColumnMap(headers: string[]): Record<string, string> {
   const map: Record<string, string> = {}
   const firstNameCol: string[] = []
   const lastNameCol: string[] = []
+  const usedFields = new Set<string>()
+
+  function assign(header: string, field: string): boolean {
+    if (field === 'first_name') { firstNameCol.push(header); return true }
+    if (field === 'last_name')  { lastNameCol.push(header);  return true }
+    // First column wins — don't let a later column overwrite an already-mapped field
+    if (usedFields.has(field)) return false
+    map[header.trim()] = field
+    usedFields.add(field)
+    return true
+  }
 
   for (const header of headers) {
     const n = norm(header)
@@ -78,20 +92,16 @@ function buildColumnMap(headers: string[]): Record<string, string> {
     let matched = false
     for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
       if (keywords.includes(n)) {
-        if (field === 'first_name') { firstNameCol.push(header); matched = true; break }
-        if (field === 'last_name')  { lastNameCol.push(header);  matched = true; break }
-        map[header] = field
-        matched = true
+        matched = assign(header, field)
         break
       }
     }
-    // Partial match fallback — check if any keyword is contained in the normalized header
+    // Partial match fallback — only with keywords of 4+ chars to avoid false hits
+    // (e.g. "st" matching inside "Last Action")
     if (!matched) {
       for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
-        if (keywords.some(k => n.includes(k) || k.includes(n))) {
-          if (field === 'first_name') { firstNameCol.push(header); break }
-          if (field === 'last_name')  { lastNameCol.push(header);  break }
-          map[header] = field
+        if (keywords.some(k => k.length >= 4 && (n.includes(k) || k.includes(n)))) {
+          assign(header, field)
           break
         }
       }
