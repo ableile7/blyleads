@@ -220,6 +220,9 @@ export async function POST(req: NextRequest) {
   let skipped = 0
 
   for (const mapped of mappedRows) {
+    // Skip rows with no meaningful data (e.g. blank trailing rows in source files)
+    if (!mapped['contact_name'] && !mapped['primary_phone'] && !mapped['lead_id']) { skipped++; continue }
+
     const sourceId = mapped['lead_id'] || null
     if (sourceId && existingSourceIds.has(sourceId)) { skipped++; continue }
 
