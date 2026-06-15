@@ -1,4 +1,5 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { fulfillPaidSession } from '@/lib/fulfillment'
 import { redirect } from 'next/navigation'
 
 export default async function SuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
@@ -7,6 +8,15 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
   if (!user) redirect('/')
 
   const adminSupabase = createAdminClient()
+
+  // Self-healing fulfillment: the Stripe webhook normally assigns leads the
+  // instant payment completes, but if it's misconfigured or fails, fulfill here
+  // when the agent lands on this page. fulfillPaidSession verifies payment with
+  // Stripe and is idempotent, so this is a no-op when the webhook already ran.
+  if (searchParams.session_id) {
+    await fulfillPaidSession(adminSupabase, searchParams.session_id)
+  }
+
   const { data: orders } = await adminSupabase
     .from('orders')
     .select('*')

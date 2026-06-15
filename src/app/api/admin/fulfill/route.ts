@@ -1,7 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthed } from '@/lib/adminAuth'
-import { fetchAvailableLeadIds, markLeadsSold } from '@/lib/fulfillment'
-import { stripe } from '@/lib/stripe'
+import { fulfillPaidSession } from '@/lib/fulfillment'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -11,68 +10,18 @@ export async function POST(req: NextRequest) {
   if (!sessionId) {
     return NextResponse.json({ error: 'Missing session id' }, { status: 400 })
   }
-  const supabase = createAdminClient()
 
-  // Stripe is the source of truth for payment. Never assign leads for a session
-  // that hasn't actually been paid (e.g. an abandoned checkout stuck at 'pending').
-  let session
-  try {
-    session = await stripe.checkout.sessions.retrieve(sessionId)
-  } catch {
-    return NextResponse.json({ error: 'Could not verify payment with Stripe.' }, { status: 400 })
-  }
-  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+  const result = await fulfillPaidSession(createAdminClient(), sessionId)
+
+  if (!result.sessionPaid) {
     return NextResponse.json({ error: 'Payment has not been completed for this order.' }, { status: 400 })
   }
-
-  // Get all pending orders for this session
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('stripe_session_id', sessionId)
-    .eq('status', 'pending')
-
-  if (!orders || orders.length === 0) {
-    return NextResponse.json({ error: 'No pending orders found for this session' }, { status: 404 })
+  if (result.failed.length > 0) {
+    return NextResponse.json({ error: result.failed.join('; ') }, { status: 400 })
+  }
+  if (result.fulfilled === 0 && result.alreadyDone === 0) {
+    return NextResponse.json({ error: 'No pending orders found for this session.' }, { status: 404 })
   }
 
-  const now = new Date().toISOString()
-
-  for (const order of orders) {
-    const leadIds = await fetchAvailableLeadIds(supabase, order.tier, order.states, order.quantity)
-
-    if (leadIds.length < order.quantity) {
-      return NextResponse.json({
-        error: `Only ${leadIds.length} ${order.tier} leads available, need ${order.quantity}`,
-      }, { status: 400 })
-    }
-
-    const updateError = await markLeadsSold(supabase, leadIds, order.agent_id, now)
-    if (updateError) {
-      return NextResponse.json({
-        error: `Failed to assign ${order.tier} leads: ${updateError.message}`,
-      }, { status: 500 })
-    }
-
-    await supabase
-      .from('orders')
-      .update({ status: 'paid' })
-      .eq('id', order.id)
-
-    // Update pricing available_count
-    const { data: pricing } = await supabase
-      .from('pricing')
-      .select('available_count')
-      .eq('tier', order.tier)
-      .single()
-
-    if (pricing) {
-      await supabase
-        .from('pricing')
-        .update({ available_count: Math.max(0, pricing.available_count - order.quantity) })
-        .eq('tier', order.tier)
-    }
-  }
-
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, fulfilled: result.fulfilled })
 }
