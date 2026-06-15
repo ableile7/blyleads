@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import { stripe } from '@/lib/stripe'
 import FulfillButton from './FulfillButton'
 
 type Order = {
@@ -32,6 +33,27 @@ export default async function AdminOrdersPage() {
   }
   const sessions = Array.from(sessionMap.values())
 
+  // The local 'pending' status can't distinguish "never paid" (abandoned checkout)
+  // from "paid but webhook didn't fulfill". Ask Stripe — the source of truth — for
+  // the real payment status of every pending session, so Fulfill only ever appears
+  // (and only ever works) once payment has actually processed.
+  const pendingSessionIds = sessions
+    .filter(group => group.some(o => o.status === 'pending'))
+    .map(group => group[0].stripe_session_id)
+    .filter((id): id is string => !!id && id.startsWith('cs_'))
+
+  const paidSessions = new Set<string>()
+  await Promise.all(pendingSessionIds.map(async (sid) => {
+    try {
+      const s = await stripe.checkout.sessions.retrieve(sid)
+      if (s.payment_status === 'paid' || s.payment_status === 'no_payment_required') {
+        paidSessions.add(sid)
+      }
+    } catch {
+      // Treat unverifiable sessions as unpaid — never offer to fulfill them.
+    }
+  }))
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -58,7 +80,14 @@ export default async function AdminOrdersPage() {
               const totalAmount = sessionOrders.reduce((s, o) => s + Number(o.total_amount), 0)
               const allPaid = sessionOrders.every(o => o.status === 'paid')
               const anyPending = sessionOrders.some(o => o.status === 'pending')
-              const status = allPaid ? 'paid' : anyPending ? 'pending' : 'failed'
+              const sid = first.stripe_session_id
+              const stripePaid = !!sid && paidSessions.has(sid)
+              // Payment confirmed by Stripe but leads not yet assigned → safe to fulfill.
+              const needsFulfillment = anyPending && stripePaid
+              const status = allPaid ? 'paid'
+                : needsFulfillment ? 'paid · unfulfilled'
+                : anyPending ? 'unpaid'
+                : 'failed'
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
 
               return (
@@ -77,7 +106,8 @@ export default async function AdminOrdersPage() {
                   <td className="px-5 py-4">
                     <span className={`text-xs font-semibold capitalize ${
                       status === 'paid' ? 'text-green-600' :
-                      status === 'failed' ? 'text-red-500' : 'text-yellow-600'
+                      status === 'failed' ? 'text-red-500' :
+                      status === 'unpaid' ? 'text-gray-400' : 'text-yellow-600'
                     }`}>{status}</span>
                   </td>
                   <td className="px-5 py-4 text-gray-500 text-xs">
@@ -89,7 +119,7 @@ export default async function AdminOrdersPage() {
                       : '—'}
                   </td>
                   <td className="px-5 py-4">
-                    {anyPending && (
+                    {needsFulfillment && (
                       <FulfillButton sessionId={first.stripe_session_id} />
                     )}
                   </td>

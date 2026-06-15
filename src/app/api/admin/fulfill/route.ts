@@ -1,13 +1,29 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthed } from '@/lib/adminAuth'
 import { fetchAvailableLeadIds, markLeadsSold } from '@/lib/fulfillment'
+import { stripe } from '@/lib/stripe'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
   if (!isAdminAuthed()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { sessionId } = await req.json()
+  if (!sessionId) {
+    return NextResponse.json({ error: 'Missing session id' }, { status: 400 })
+  }
   const supabase = createAdminClient()
+
+  // Stripe is the source of truth for payment. Never assign leads for a session
+  // that hasn't actually been paid (e.g. an abandoned checkout stuck at 'pending').
+  let session
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId)
+  } catch {
+    return NextResponse.json({ error: 'Could not verify payment with Stripe.' }, { status: 400 })
+  }
+  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+    return NextResponse.json({ error: 'Payment has not been completed for this order.' }, { status: 400 })
+  }
 
   // Get all pending orders for this session
   const { data: orders } = await supabase
