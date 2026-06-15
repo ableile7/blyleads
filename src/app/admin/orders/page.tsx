@@ -138,9 +138,11 @@ export default async function AdminOrdersPage() {
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    Prime:   'bg-[#e8f0f8] text-[#1F3864]',
-    Select:  'bg-[#eaf2e4] text-[#2d4a1e]',
-    Premier: 'bg-[#f5eaf2] text-[#4a1e3a]',
+    Prime:     'bg-[#e8f0f8] text-[#1F3864]',
+    Select:    'bg-[#eaf2e4] text-[#2d4a1e]',
+    Premier:   'bg-[#f5eaf2] text-[#4a1e3a]',
+    Core:      'bg-[#fbf3d9] text-[#6b5500]',
+    Essential: 'bg-[#eef1f4] text-[#3a4452]',
   }
   return <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>{tier}</span>
 }

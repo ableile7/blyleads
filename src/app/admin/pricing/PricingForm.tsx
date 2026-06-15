@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 type Tier = { tier: string; price_per_lead: number; available_count: number; is_active: boolean }
 
 const TIER_STYLES: Record<string, string> = {
-  Prime:   'border-[#3b7abf] bg-[#e8f0f8]',
-  Select:  'border-[#5a9e3a] bg-[#eaf2e4]',
-  Premier: 'border-[#9e3a7a] bg-[#f5eaf2]',
+  Prime:     'border-[#3b7abf] bg-[#e8f0f8]',
+  Select:    'border-[#5a9e3a] bg-[#eaf2e4]',
+  Premier:   'border-[#9e3a7a] bg-[#f5eaf2]',
+  Core:      'border-[#c9a227] bg-[#fbf3d9]',
+  Essential: 'border-[#8a97a8] bg-[#eef1f4]',
 }
 
 export default function PricingForm({ tier }: { tier: Tier }) {
