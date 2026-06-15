@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import FulfillButton from './FulfillButton'
+import ClearUnpaidButton from './ClearUnpaidButton'
 
 type Order = {
   id: string
@@ -54,13 +55,22 @@ export default async function AdminOrdersPage() {
     }
   }))
 
+  // Unpaid = pending sessions Stripe did NOT confirm as paid (abandoned checkouts).
+  const unpaidCount = sessions.filter(group => {
+    const sid = group[0].stripe_session_id
+    return group.some(o => o.status === 'pending') && !(sid && paidSessions.has(sid))
+  }).length
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-2xl font-bold text-gray-800">All Orders</h2>
-        <div className="bg-white border border-gray-100 rounded-xl px-5 py-3 text-right">
-          <p className="text-xs text-gray-500">Total Revenue</p>
-          <p className="text-2xl font-bold text-gray-800">${totalRevenue.toFixed(2)}</p>
+        <div className="flex items-center gap-3">
+          {unpaidCount > 0 && <ClearUnpaidButton count={unpaidCount} />}
+          <div className="bg-white border border-gray-100 rounded-xl px-5 py-3 text-right">
+            <p className="text-xs text-gray-500">Total Revenue</p>
+            <p className="text-2xl font-bold text-gray-800">${totalRevenue.toFixed(2)}</p>
+          </div>
         </div>
       </div>
 
