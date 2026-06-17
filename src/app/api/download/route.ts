@@ -58,7 +58,11 @@ export async function GET(req: NextRequest) {
         .eq('sold_to', user.id)
         .eq('tier', order.tier)
         .not('sold_at', 'is', null)
+        // sold_at is identical across a whole batch, so it alone is not a stable
+        // sort — add id as a tiebreaker or offset pages overlap and the CSV ends
+        // up with duplicate rows (and silently drops just as many real leads).
         .order('sold_at', { ascending: false })
+        .order('id', { ascending: true })
         .range(page, page + Math.min(remaining, PAGE) - 1)
       if (!chunk || chunk.length === 0) break
       allLeads.push(...chunk)
