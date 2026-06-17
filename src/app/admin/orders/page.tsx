@@ -8,12 +8,17 @@ type Order = {
   tier: string
   quantity: number
   total_amount: number
+  amount_collected: number | null
   status: string
   created_at: string
   stripe_session_id: string
   downloaded_at: string | null
   agents?: { full_name: string; email: string }
 }
+
+// What Stripe actually charged (list price + fee - discount). Falls back to the
+// list price for orders fulfilled before amount_collected was recorded.
+const collected = (o: Order) => Number(o.amount_collected ?? o.total_amount)
 
 export default async function AdminOrdersPage() {
   const supabase = createAdminClient()
@@ -23,7 +28,7 @@ export default async function AdminOrdersPage() {
     .order('created_at', { ascending: false })
 
   const totalRevenue = orders?.filter(o => o.status === 'paid')
-    .reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0
+    .reduce((sum, o) => sum + collected(o), 0) ?? 0
 
   // Group by stripe_session_id
   const sessionMap = new Map<string, Order[]>()
@@ -87,7 +92,7 @@ export default async function AdminOrdersPage() {
             {sessions.map(sessionOrders => {
               const first = sessionOrders[0]
               const totalLeads = sessionOrders.reduce((s, o) => s + o.quantity, 0)
-              const totalAmount = sessionOrders.reduce((s, o) => s + Number(o.total_amount), 0)
+              const totalAmount = sessionOrders.reduce((s, o) => s + collected(o), 0)
               const allPaid = sessionOrders.every(o => o.status === 'paid')
               const anyPending = sessionOrders.some(o => o.status === 'pending')
               const sid = first.stripe_session_id

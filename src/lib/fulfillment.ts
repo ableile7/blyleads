@@ -47,12 +47,22 @@ export async function fulfillPaidSession(
 
   const now = new Date().toISOString()
 
+  // What Stripe actually collected for the whole session (list price + fee -
+  // discount), split across the session's orders by their list-price share so
+  // the admin revenue total ties out to Stripe instead of overstating it.
+  const collectedTotal = (session.amount_total ?? 0) / 100
+  const sessionSubtotal = orders.reduce((s, o) => s + Number(o.total_amount), 0)
+
   for (const order of orders) {
+    const amountCollected = sessionSubtotal > 0
+      ? Math.round(collectedTotal * (Number(order.total_amount) / sessionSubtotal) * 100) / 100
+      : collectedTotal
+
     // Atomically claim the order. The .eq('status','pending') guard means only
     // one trigger wins; a concurrent caller gets an empty result and skips.
     const { data: claimed } = await supabase
       .from('orders')
-      .update({ status: 'paid', stripe_payment_intent: paymentIntent })
+      .update({ status: 'paid', stripe_payment_intent: paymentIntent, amount_collected: amountCollected })
       .eq('id', order.id)
       .eq('status', 'pending')
       .select('id')
