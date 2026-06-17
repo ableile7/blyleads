@@ -99,6 +99,7 @@ export default async function AdminOrdersPage() {
                 : anyPending ? 'unpaid'
                 : 'failed'
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
+              const hasPaidLeads = sessionOrders.some(o => o.status === 'paid')
 
               return (
                 <tr key={first.stripe_session_id || first.id} className="hover:bg-gray-50 transition">
@@ -129,9 +130,19 @@ export default async function AdminOrdersPage() {
                       : '—'}
                   </td>
                   <td className="px-5 py-4">
-                    {needsFulfillment && (
-                      <FulfillButton sessionId={first.stripe_session_id} />
-                    )}
+                    <div className="flex items-center gap-3 justify-end">
+                      {hasPaidLeads && sid && (
+                        <a
+                          href={`/api/admin/order-leads?sessionId=${encodeURIComponent(sid)}`}
+                          className="text-xs font-semibold text-[#1F3864] hover:underline whitespace-nowrap"
+                        >
+                          ↓ Leads
+                        </a>
+                      )}
+                      {needsFulfillment && (
+                        <FulfillButton sessionId={first.stripe_session_id} />
+                      )}
+                    </div>
                   </td>
                 </tr>
               )
