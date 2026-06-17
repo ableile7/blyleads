@@ -35,13 +35,17 @@ export async function markLeadsSold(
   supabase: SupabaseClient,
   leadIds: string[],
   agentId: string,
-  soldAt: string
+  soldAt: string,
+  orderId: string
 ): Promise<{ message: string } | null> {
   for (let i = 0; i < leadIds.length; i += 200) {
     const chunk = leadIds.slice(i, i + 200)
     const { error } = await supabase
       .from('leads')
-      .update({ is_sold: true, sold_to: agentId, sold_at: soldAt })
+      // order_id links each lead to the specific order it was sold for, so the
+      // download can return exactly that order's leads (instead of guessing by
+      // "newest N of this tier", which misfires for repeat same-tier buyers).
+      .update({ is_sold: true, sold_to: agentId, sold_at: soldAt, order_id: orderId })
       .in('id', chunk)
     if (error) return error
   }
@@ -117,7 +121,7 @@ export async function fulfillPaidSession(
       continue
     }
 
-    const assignError = await markLeadsSold(supabase, leadIds, order.agent_id, now)
+    const assignError = await markLeadsSold(supabase, leadIds, order.agent_id, now, order.id)
     if (assignError) {
       await supabase.from('orders').update({ status: 'pending', stripe_payment_intent: null }).eq('id', order.id)
       result.failed.push(`${order.tier}: ${assignError.message}`)
