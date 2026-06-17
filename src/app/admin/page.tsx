@@ -14,10 +14,12 @@ export default async function AdminOverviewPage() {
     supabase.from('agents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('leads').select('*', { count: 'exact', head: true }),
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('is_sold', true),
-    supabase.from('orders').select('total_amount').eq('status', 'paid'),
+    supabase.from('orders').select('total_amount, amount_collected').eq('status', 'paid'),
   ])
 
-  const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0
+  // Use what Stripe actually collected (list price + fee - discount), falling
+  // back to list price for any legacy order without amount_collected recorded.
+  const totalRevenue = orders?.reduce((sum, o) => sum + Number(o.amount_collected ?? o.total_amount), 0) ?? 0
 
   const stats = [
     { label: 'Total Agents', value: totalAgents ?? 0 },
