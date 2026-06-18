@@ -8,23 +8,22 @@
 --    one. The DO block drops whatever the constraint is named, so this is safe
 --    regardless of the auto-generated constraint name.
 do $$
-declare c record;
+declare c record; t text;
 begin
-  for c in select conname from pg_constraint
-           where conrelid = 'leads'::regclass and contype = 'c'
-             and pg_get_constraintdef(oid) ilike '%tier%' loop
-    execute format('alter table leads drop constraint %I', c.conname);
-  end loop;
-  for c in select conname from pg_constraint
-           where conrelid = 'orders'::regclass and contype = 'c'
-             and pg_get_constraintdef(oid) ilike '%tier%' loop
-    execute format('alter table orders drop constraint %I', c.conname);
+  foreach t in array array['leads', 'orders', 'pricing'] loop
+    for c in select conname from pg_constraint
+             where conrelid = t::regclass and contype = 'c'
+               and pg_get_constraintdef(oid) ilike '%tier%' loop
+      execute format('alter table %I drop constraint %I', t, c.conname);
+    end loop;
   end loop;
 end $$;
 
-alter table leads  add constraint leads_tier_check
+alter table leads   add constraint leads_tier_check
   check (tier in ('Prime', 'Select', 'Premier', 'Core', 'Essential', 'Data Leads'));
-alter table orders add constraint orders_tier_check
+alter table orders  add constraint orders_tier_check
+  check (tier in ('Prime', 'Select', 'Premier', 'Core', 'Essential', 'Data Leads'));
+alter table pricing add constraint pricing_tier_check
   check (tier in ('Prime', 'Select', 'Premier', 'Core', 'Essential', 'Data Leads'));
 
 -- 2. Pricing row for the new tier — created INACTIVE with a placeholder price.
