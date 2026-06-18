@@ -10,6 +10,7 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; g
   Premier:   { badge: 'bg-[#2a0f2e]/80 text-[#d47ef0] border border-[#7a2d9e]/50', bg: 'bg-gradient-to-b from-[#1c0e20]/90 to-[#0e0612]/95', border: 'border-[#7a2d9e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(170,80,220,0.4)]' },
   Core:      { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
   Essential: { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
+  'Data Leads': { badge: 'bg-[#06201d]/80 text-[#5fd4c4] border border-[#0f766e]/50', bg: 'bg-gradient-to-b from-[#08231f]/90 to-[#04100e]/95', border: 'border-[#0f766e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(20,184,166,0.35)]' },
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {

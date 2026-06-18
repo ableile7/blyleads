@@ -169,6 +169,7 @@ function TierBadge({ tier }: { tier: string }) {
     Premier:   'bg-[#f5eaf2] text-[#4a1e3a]',
     Core:      'bg-[#fbf3d9] text-[#6b5500]',
     Essential: 'bg-[#eef1f4] text-[#3a4452]',
+    'Data Leads': 'bg-[#d6f3ef] text-[#0f5a52]',
   }
   return <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>{tier}</span>
 }

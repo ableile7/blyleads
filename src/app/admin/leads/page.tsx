@@ -20,6 +20,7 @@ export default async function AdminLeadsPage() {
     Premier:   { badge: 'bg-[#4a1e3a] text-white', bar: 'bg-[#9e3a7a]' },
     Core:      { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
     Essential: { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
+    'Data Leads': { badge: 'bg-[#0f5a52] text-white', bar: 'bg-[#14b8a6]' },
   }
 
   return (
