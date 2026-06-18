@@ -4,7 +4,7 @@ import PurchaseForm from './PurchaseForm'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
-const TIER_ORDER = ['Select', 'Prime', 'Premier', 'Essential', 'Core']
+const TIER_ORDER = ['Select', 'Prime', 'Premier', 'Essential', 'Core', 'Data Leads']
 
 const TIER_CATEGORY: Record<string, string> = {
   Select: 'Aged Mortgage Protection', Prime: 'Aged Mortgage Protection',

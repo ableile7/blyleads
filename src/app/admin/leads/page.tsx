@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 
-const TIERS = ['Select', 'Prime', 'Premier', 'Essential', 'Core']
+const TIERS = ['Select', 'Prime', 'Premier', 'Essential', 'Core', 'Data Leads']
 
 export default async function AdminLeadsPage() {
   const supabase = createAdminClient()
