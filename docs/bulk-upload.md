@@ -50,3 +50,12 @@ rows added vs. skipped (duplicates). Multiple files upload one after another.
   - PapaParse row shape + blank-line skip + chunk boundaries ✓
   - all test rows cleaned up; `available_count` restored ✓
 - [pending] real 150k upload by user, monitored live.
+
+## "Data Leads" tier (added June 2026)
+A 6th tier, **Data Leads** (filename keyword `DATA`, teal badge), was added
+alongside Prime/Select/Premier/Core/Essential. Migration 004 updated the tier
+CHECK on leads/orders/pricing and inserted an inactive pricing row. Verified:
+DB accepts the tier, upload routes `DATA` files to it, it's hidden from agents
+until `is_active` is turned on in admin Pricing. Tier appears in all 7 color
+maps + the admin leads-inventory list + dashboard ordering. Set the price and
+flip Active in admin → Pricing, then upload the file (filename contains DATA).
