@@ -1,12 +1,18 @@
 'use client'
 import { useState, useRef } from 'react'
+import Papa from 'papaparse'
+import { detectTier } from '@/lib/tiers'
+
+const CHUNK_SIZE = 3000
 
 type FileResult = {
   name: string
-  status: 'pending' | 'uploading' | 'done' | 'error'
+  status: 'pending' | 'parsing' | 'uploading' | 'done' | 'error'
+  tier?: string
+  total?: number
+  processed?: number
   inserted?: number
   skipped?: number
-  tier?: string
   error?: string
 }
 
@@ -21,30 +27,41 @@ export default function UploadForm() {
     setFiles(selected)
     setResults(selected.map(f => ({ name: f.name, status: 'pending' })))
   }
-
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
     loadFiles(Array.from(e.target.files || []))
     if (fileRef.current) fileRef.current.value = ''
   }
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    setDragging(true)
-  }
-
-  function handleDragLeave(e: React.DragEvent) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false)
-  }
-
+  function handleDragOver(e: React.DragEvent) { e.preventDefault(); setDragging(true) }
+  function handleDragLeave(e: React.DragEvent) { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false) }
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setDragging(false)
+    e.preventDefault(); setDragging(false)
     const dropped = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'))
     if (dropped.length > 0) loadFiles(dropped)
   }
-
   function updateResult(index: number, patch: Partial<FileResult>) {
     setResults(prev => prev.map((r, i) => i === index ? { ...r, ...patch } : r))
+  }
+
+  function parseCsv(file: File): Promise<Record<string, string>[]> {
+    return new Promise((resolve, reject) => {
+      Papa.parse<Record<string, string>>(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: results => resolve(results.data),
+        error: err => reject(err),
+      })
+    })
+  }
+
+  async function uploadChunk(tier: string, rows: Record<string, string>[], finalize: boolean) {
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier, rows, finalize }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Upload failed')
+    return data as { inserted: number; skipped: number }
   }
 
   async function handleUpload() {
@@ -52,22 +69,30 @@ export default function UploadForm() {
     setRunning(true)
 
     for (let i = 0; i < files.length; i++) {
-      updateResult(i, { status: 'uploading' })
-
-      const formData = new FormData()
-      formData.append('file', files[i])
+      const file = files[i]
+      const tier = detectTier(file.name)
+      if (!tier) {
+        updateResult(i, { status: 'error', error: 'Filename must contain BRONZE, COPPER, RUBY, GOLD, or SILVER' })
+        continue
+      }
 
       try {
-        const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
-        const data = await res.json()
+        updateResult(i, { status: 'parsing', tier })
+        const rows = await parseCsv(file)
+        const total = rows.length
+        updateResult(i, { status: 'uploading', total, processed: 0, inserted: 0, skipped: 0 })
 
-        if (!res.ok) {
-          updateResult(i, { status: 'error', error: data.error || 'Upload failed' })
-        } else {
-          updateResult(i, { status: 'done', inserted: data.inserted, skipped: data.skipped, tier: data.tier })
+        let inserted = 0, skipped = 0, processed = 0
+        for (let c = 0; c < rows.length; c += CHUNK_SIZE) {
+          const chunk = rows.slice(c, c + CHUNK_SIZE)
+          const isLast = c + CHUNK_SIZE >= rows.length
+          const r = await uploadChunk(tier, chunk, isLast)
+          inserted += r.inserted; skipped += r.skipped; processed += chunk.length
+          updateResult(i, { processed, inserted, skipped })
         }
-      } catch {
-        updateResult(i, { status: 'error', error: 'Network error' })
+        updateResult(i, { status: 'done', inserted, skipped })
+      } catch (e) {
+        updateResult(i, { status: 'error', error: e instanceof Error ? e.message : 'Upload failed' })
       }
     }
 
@@ -95,7 +120,7 @@ export default function UploadForm() {
           ) : (
             <>
               <p className="text-sm font-semibold text-gray-600">Drop files here or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">Multiple files supported — filenames must contain BRONZE, COPPER, RUBY, GOLD, or SILVER</p>
+              <p className="text-xs text-gray-400 mt-1">Large files supported — filenames must contain BRONZE, COPPER, RUBY, GOLD, or SILVER</p>
             </>
           )}
           <input ref={fileRef} type="file" accept=".csv" multiple className="hidden" onChange={handleSelect} />
@@ -103,31 +128,45 @@ export default function UploadForm() {
 
         {results.length > 0 && (
           <div className="mt-4 space-y-2">
-            {results.map((r, i) => (
-              <div key={i} className={`rounded-xl px-4 py-3 text-sm flex items-start justify-between gap-3 ${
-                r.status === 'done'     ? 'bg-green-50 border border-green-200' :
-                r.status === 'error'   ? 'bg-red-50 border border-red-200' :
-                r.status === 'uploading' ? 'bg-blue-50 border border-blue-200' :
-                'bg-gray-50 border border-gray-200'
-              }`}>
-                <div>
-                  <p className={`font-semibold truncate max-w-[280px] ${
-                    r.status === 'done' ? 'text-green-700' :
-                    r.status === 'error' ? 'text-red-600' :
-                    r.status === 'uploading' ? 'text-blue-700' :
-                    'text-gray-500'
-                  }`}>{r.name}</p>
-                  {r.status === 'done' && (
-                    <p className="text-green-600 mt-0.5">{r.tier} — {r.inserted} inserted{r.skipped ? `, ${r.skipped} skipped` : ''}</p>
-                  )}
-                  {r.status === 'error' && <p className="text-red-500 mt-0.5">{r.error}</p>}
-                  {r.status === 'uploading' && <p className="text-blue-500 mt-0.5">Uploading…</p>}
+            {results.map((r, i) => {
+              const pct = r.total ? Math.round(((r.processed ?? 0) / r.total) * 100) : 0
+              return (
+                <div key={i} className={`rounded-xl px-4 py-3 text-sm ${
+                  r.status === 'done'      ? 'bg-green-50 border border-green-200' :
+                  r.status === 'error'     ? 'bg-red-50 border border-red-200' :
+                  r.status === 'uploading' || r.status === 'parsing' ? 'bg-blue-50 border border-blue-200' :
+                  'bg-gray-50 border border-gray-200'
+                }`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={`font-semibold truncate max-w-[280px] ${
+                        r.status === 'done' ? 'text-green-700' :
+                        r.status === 'error' ? 'text-red-600' :
+                        r.status === 'uploading' || r.status === 'parsing' ? 'text-blue-700' : 'text-gray-500'
+                      }`}>{r.name}{r.tier ? ` → ${r.tier}` : ''}</p>
+                      {r.status === 'parsing' && <p className="text-blue-500 mt-0.5">Reading file…</p>}
+                      {r.status === 'uploading' && (
+                        <p className="text-blue-600 mt-0.5">
+                          {(r.processed ?? 0).toLocaleString()} / {(r.total ?? 0).toLocaleString()} rows · {(r.inserted ?? 0).toLocaleString()} added{r.skipped ? `, ${r.skipped.toLocaleString()} skipped` : ''}
+                        </p>
+                      )}
+                      {r.status === 'done' && (
+                        <p className="text-green-600 mt-0.5">{(r.inserted ?? 0).toLocaleString()} added{r.skipped ? `, ${(r.skipped).toLocaleString()} skipped (duplicates)` : ''} of {(r.total ?? 0).toLocaleString()}</p>
+                      )}
+                      {r.status === 'error' && <p className="text-red-500 mt-0.5">{r.error}</p>}
+                    </div>
+                    <span className="text-lg flex-shrink-0">
+                      {r.status === 'done' ? '✓' : r.status === 'error' ? '✗' : (r.status === 'uploading' || r.status === 'parsing') ? '⏳' : '·'}
+                    </span>
+                  </div>
+                  {r.status === 'uploading' && r.total ? (
+                    <div className="mt-2 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#1F3864] transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  ) : null}
                 </div>
-                <span className="text-lg flex-shrink-0">
-                  {r.status === 'done' ? '✓' : r.status === 'error' ? '✗' : r.status === 'uploading' ? '⏳' : '·'}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

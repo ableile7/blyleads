@@ -1,9 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthed } from '@/lib/adminAuth'
+import { isValidTier } from '@/lib/tiers'
 import { NextRequest, NextResponse } from 'next/server'
-import Papa from 'papaparse'
 
-export const maxDuration = 300 // 5 minutes on Vercel Pro
+export const maxDuration = 60 // each chunk is small; no long-running scans
 
 const WORDS = [
   'apple','bridge','cabin','daisy','eagle','fence','globe','honey','island','jacket',
@@ -23,7 +23,6 @@ function randomPhrase(): string {
   const shuffle = [...WORDS].sort(() => Math.random() - 0.5)
   return shuffle.slice(0, 3).join(' ')
 }
-
 function uniquePhrase(used: Set<string>): string {
   let phrase = randomPhrase()
   while (used.has(phrase)) phrase = randomPhrase()
@@ -31,22 +30,10 @@ function uniquePhrase(used: Set<string>): string {
   return phrase
 }
 
-function detectTier(filename: string): string | null {
-  const upper = filename.toUpperCase()
-  if (upper.includes('BRONZE')) return 'Prime'
-  if (upper.includes('COPPER')) return 'Select'
-  if (upper.includes('RUBY'))   return 'Premier'
-  if (upper.includes('GOLD'))   return 'Core'
-  if (upper.includes('SILVER')) return 'Essential'
-  return null
-}
-
-// Normalize a header to lowercase letters/digits only for fuzzy matching
 function norm(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-// Keyword groups for each DB field — first match wins
 const FIELD_KEYWORDS: Record<string, string[]> = {
   lead_id:               ['mortgageid','mortgageidnumber','leadid','sourceleadid','recordid','sourceid','prospectid','clientid'],
   contact_name:          ['fullname','contactname','name','clientname','customername','prospectname','borrowername','borrower'],
@@ -78,7 +65,6 @@ function buildColumnMap(headers: string[]): Record<string, string> {
   function assign(header: string, field: string): boolean {
     if (field === 'first_name') { firstNameCol.push(header); return true }
     if (field === 'last_name')  { lastNameCol.push(header);  return true }
-    // First column wins — don't let a later column overwrite an already-mapped field
     if (usedFields.has(field)) return false
     map[header.trim()] = field
     usedFields.add(field)
@@ -88,124 +74,91 @@ function buildColumnMap(headers: string[]): Record<string, string> {
   for (const header of headers) {
     const n = norm(header)
     if (DROP_KEYWORDS.has(n)) continue
-
     let matched = false
     for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
-      if (keywords.includes(n)) {
-        matched = assign(header, field)
-        break
-      }
+      if (keywords.includes(n)) { matched = assign(header, field); break }
     }
-    // Partial match fallback — only with keywords of 4+ chars to avoid false hits
-    // (e.g. "st" matching inside "Last Action")
     if (!matched) {
       for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
-        if (keywords.some(k => k.length >= 4 && (n.includes(k) || k.includes(n)))) {
-          assign(header, field)
-          break
-        }
+        if (keywords.some(k => k.length >= 4 && (n.includes(k) || k.includes(n)))) { assign(header, field); break }
       }
     }
   }
-
-  // Store first/last name columns separately for combining later
   if (firstNameCol.length) map['__first_name__'] = firstNameCol[0]
   if (lastNameCol.length)  map['__last_name__']  = lastNameCol[0]
-
   return map
 }
 
-async function paginateAll<T>(
+// Look up which of `values` already exist in `column`, scoped to just these
+// values (chunked .in() queries) — O(chunk), independent of table size.
+async function existingValues(
   supabase: ReturnType<typeof createAdminClient>,
-  table: string,
-  columns: string,
-): Promise<T[]> {
-  const results: T[] = []
-  let page = 0
-  const PAGE = 1000
-  while (true) {
-    const { data } = await supabase.from(table).select(columns).range(page, page + PAGE - 1)
-    if (!data || data.length === 0) break
-    results.push(...(data as T[]))
-    if (data.length < PAGE) break
-    page += PAGE
+  column: string,
+  selectCols: string,
+  values: string[],
+): Promise<Record<string, string>[]> {
+  const found: Record<string, string>[] = []
+  const unique = Array.from(new Set(values))
+  for (let i = 0; i < unique.length; i += 200) {
+    const chunk = unique.slice(i, i + 200)
+    const { data } = await supabase.from('leads').select(selectCols).in(column, chunk)
+    if (data) found.push(...(data as unknown as Record<string, string>[]))
   }
-  return results
+  return found
 }
+
+type ChunkBody = { tier?: string; rows?: Record<string, string>[]; finalize?: boolean }
 
 export async function POST(req: NextRequest) {
   if (!isAdminAuthed()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const formData = await req.formData()
-  const file = formData.get('file') as File | null
-  if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-
-  const tier = detectTier(file.name)
-  if (!tier) return NextResponse.json({ error: 'Filename must contain BRONZE, COPPER, RUBY, GOLD, or SILVER to detect tier' }, { status: 400 })
-
-  const text = await file.text()
-  const { data: rows, errors } = Papa.parse<Record<string, string>>(text, {
-    header: true,
-    skipEmptyLines: true,
-  })
-
-  if (errors.length > 0 && rows.length === 0) {
-    return NextResponse.json({ error: 'Failed to parse CSV' }, { status: 400 })
+  const { tier, rows, finalize }: ChunkBody = await req.json().catch(() => ({}))
+  if (!tier || !isValidTier(tier)) {
+    return NextResponse.json({ error: 'Invalid or missing tier' }, { status: 400 })
+  }
+  if (!Array.isArray(rows)) {
+    return NextResponse.json({ error: 'Missing rows' }, { status: 400 })
   }
 
   const supabase = createAdminClient()
 
-  // Step 1: Build column map from actual headers in this file
-  const headers = rows.length > 0 ? Object.keys(rows[0]) : []
+  if (rows.length === 0) {
+    if (finalize) await syncAvailableCount(supabase, tier)
+    return NextResponse.json({ inserted: 0, skipped: 0, tier })
+  }
+
+  // Map raw vendor columns -> BlyLeads fields using this chunk's headers.
+  const headers = Object.keys(rows[0])
   const colMap = buildColumnMap(headers)
   const firstNameCol = colMap['__first_name__']
   const lastNameCol  = colMap['__last_name__']
 
-  // Step 1: Map all rows up front
-  const mappedRows: Record<string, string>[] = rows.map(row => {
+  const mappedRows = rows.map(row => {
     const mapped: Record<string, string> = {}
     for (const [origKey, val] of Object.entries(row)) {
-      const trimmedKey = origKey.trim()
-      const dbKey = colMap[trimmedKey]
-      if (dbKey && !dbKey.startsWith('__')) mapped[dbKey] = val?.trim() || ''
+      const dbKey = colMap[origKey.trim()]
+      if (dbKey && !dbKey.startsWith('__')) mapped[dbKey] = (val ?? '').toString().trim()
     }
-    // Combine first + last name into contact_name if no full name column found
     if (!mapped['contact_name'] && (firstNameCol || lastNameCol)) {
-      const first = (firstNameCol ? (row as Record<string,string>)[firstNameCol]?.trim() : '') || ''
-      const last  = (lastNameCol  ? (row as Record<string,string>)[lastNameCol]?.trim()  : '') || ''
+      const first = (firstNameCol ? row[firstNameCol]?.toString().trim() : '') || ''
+      const last  = (lastNameCol  ? row[lastNameCol]?.toString().trim()  : '') || ''
       mapped['contact_name'] = [first, last].filter(Boolean).join(' ')
     }
     return mapped
   })
 
-  // Step 2: Check only source_lead_ids from THIS batch against DB (efficient)
-  const batchSourceIds = mappedRows.map(r => r['lead_id']).filter(Boolean)
+  // Scoped dedup: only check this chunk's source IDs and phones against the DB.
   const existingSourceIds = new Set<string>()
-  for (let i = 0; i < batchSourceIds.length; i += 1000) {
-    const chunk = batchSourceIds.slice(i, i + 1000)
-    const { data } = await supabase.from('leads').select('source_lead_id').in('source_lead_id', chunk)
-    data?.forEach((r: { source_lead_id: string }) => { if (r.source_lead_id) existingSourceIds.add(r.source_lead_id) })
-  }
+  ;(await existingValues(supabase, 'source_lead_id', 'source_lead_id', mappedRows.map(r => r['lead_id']).filter(Boolean)))
+    .forEach(r => { if (r.source_lead_id) existingSourceIds.add(r.source_lead_id) })
 
-  // Step 3: Paginate existing name+phone pairs (2 small columns only)
   const existingNamePhone = new Set<string>()
-  const npRows = await paginateAll<{ contact_name: string; primary_phone: string }>(
-    supabase, 'leads', 'contact_name, primary_phone'
-  )
-  npRows.forEach(r => {
-    if (r.contact_name && r.primary_phone) {
-      existingNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
-    }
-  })
+  ;(await existingValues(supabase, 'primary_phone', 'contact_name, primary_phone', mappedRows.map(r => r['primary_phone']).filter(Boolean)))
+    .forEach(r => {
+      if (r.contact_name && r.primary_phone) existingNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
+    })
 
-  // Step 4: Paginate existing auth phrases (1 column only)
-  const usedPhrases = new Set<string>()
-  const phraseRows = await paginateAll<{ auth_phrase: string }>(
-    supabase, 'leads', 'auth_phrase'
-  )
-  phraseRows.forEach(r => { if (r.auth_phrase) usedPhrases.add(r.auth_phrase) })
-
-  // Step 5: Get last BLY number
+  // Next sequential BLY id (chunks run in series, so this advances correctly).
   const { data: lastLead } = await supabase
     .from('leads').select('lead_id').like('lead_id', 'BLY-%')
     .order('lead_id', { ascending: false }).limit(1)
@@ -215,12 +168,11 @@ export async function POST(req: NextRequest) {
     if (!isNaN(lastNum)) nextNum = lastNum + 1
   }
 
-  // Step 6: Filter duplicates and build insert list
+  const usedPhrases = new Set<string>()
   const toInsert = []
   let skipped = 0
 
   for (const mapped of mappedRows) {
-    // Skip rows with no meaningful data (e.g. blank trailing rows in source files)
     if (!mapped['contact_name'] && !mapped['primary_phone'] && !mapped['lead_id']) { skipped++; continue }
 
     const sourceId = mapped['lead_id'] || null
@@ -234,12 +186,9 @@ export async function POST(req: NextRequest) {
     if (sourceId) existingSourceIds.add(sourceId)
     if (namePhoneKey) existingNamePhone.add(namePhoneKey)
 
-    const blyId = `BLY-${String(nextNum).padStart(6, '0')}`
-    nextNum++
-
     toInsert.push({
       tier,
-      lead_id:               blyId,
+      lead_id:               `BLY-${String(nextNum++).padStart(6, '0')}`,
       source_lead_id:        sourceId,
       contact_name:          mapped['contact_name'] || null,
       street_address:        mapped['street_address'] || null,
@@ -256,24 +205,22 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Step 7: Insert in batches of 500
   let inserted = 0
   for (let i = 0; i < toInsert.length; i += 500) {
     const batch = toInsert.slice(i, i + 500)
     const { error } = await supabase.from('leads').insert(batch)
-    if (!error) inserted += batch.length
+    if (error) return NextResponse.json({ error: `Insert failed: ${error.message}`, inserted, skipped }, { status: 500 })
+    inserted += batch.length
   }
 
-  // Step 8: Sync available_count from actual DB count (always accurate)
-  const { count: actualAvailable } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('tier', tier)
-    .eq('is_sold', false)
-
-  await supabase.from('pricing').update({
-    available_count: actualAvailable ?? 0,
-  }).eq('tier', tier)
+  if (finalize) await syncAvailableCount(supabase, tier)
 
   return NextResponse.json({ inserted, skipped, tier })
+}
+
+async function syncAvailableCount(supabase: ReturnType<typeof createAdminClient>, tier: string) {
+  const { count } = await supabase
+    .from('leads').select('*', { count: 'exact', head: true })
+    .eq('tier', tier).eq('is_sold', false)
+  await supabase.from('pricing').update({ available_count: count ?? 0 }).eq('tier', tier)
 }
