@@ -59,3 +59,15 @@ DB accepts the tier, upload routes `DATA` files to it, it's hidden from agents
 until `is_active` is turned on in admin Pricing. Tier appears in all 7 color
 maps + the admin leads-inventory list + dashboard ordering. Set the price and
 flip Active in admin → Pricing, then upload the file (filename contains DATA).
+
+### Data Leads is a passthrough product (June 2026)
+Unlike the other tiers (fixed insurance schema), Data Leads rows are stored and
+delivered with their ORIGINAL columns, exactly as uploaded:
+- Upload stores each row's original columns in `leads.raw_data` (jsonb) and the
+  original column order in `leads.raw_columns` (text[]); only name + phone are
+  mapped, purely for dedup.
+- The download (`buildLeadsWorkbook`) detects `tier === 'Data Leads'` and builds
+  the sheet from `raw_columns`/`raw_data` instead of the fixed columns, so agents
+  receive the exact uploaded layout.
+- Migrations 006 (raw_data) + 007 (raw_columns). Verified end-to-end: upload →
+  store → claim → download returns identical columns in original order.
