@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Papa from 'papaparse'
 import { detectTier } from '@/lib/tiers'
 
@@ -17,6 +18,7 @@ type FileResult = {
 }
 
 export default function UploadForm() {
+  const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
   const [results, setResults] = useState<FileResult[]>([])
@@ -91,6 +93,14 @@ export default function UploadForm() {
           updateResult(i, { processed, inserted, skipped })
         }
         updateResult(i, { status: 'done', inserted, skipped })
+        // Record the upload in the history log (best-effort).
+        try {
+          await fetch('/api/admin/upload-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, tier, inserted, skipped }),
+          })
+        } catch { /* logging failure shouldn't affect the upload */ }
       } catch (e) {
         updateResult(i, { status: 'error', error: e instanceof Error ? e.message : 'Upload failed' })
       }
@@ -98,6 +108,7 @@ export default function UploadForm() {
 
     setRunning(false)
     setFiles([])
+    router.refresh() // refresh the upload-history table below
   }
 
   const allDone = results.length > 0 && results.every(r => r.status === 'done' || r.status === 'error')
