@@ -172,7 +172,14 @@ export async function POST(req: NextRequest) {
   const toInsert = []
   let skipped = 0
 
-  for (const mapped of mappedRows) {
+  // Data Leads is a passthrough product: store each row's ORIGINAL columns
+  // verbatim (in raw_data) and deliver them to agents exactly as uploaded,
+  // rather than forcing the file into the fixed insurance schema. We still map
+  // name + phone purely for dedup.
+  const isPassthrough = tier === 'Data Leads'
+
+  for (let idx = 0; idx < mappedRows.length; idx++) {
+    const mapped = mappedRows[idx]
     if (!mapped['contact_name'] && !mapped['primary_phone'] && !mapped['lead_id']) { skipped++; continue }
 
     const sourceId = mapped['lead_id'] || null
@@ -186,23 +193,41 @@ export async function POST(req: NextRequest) {
     if (sourceId) existingSourceIds.add(sourceId)
     if (namePhoneKey) existingNamePhone.add(namePhoneKey)
 
-    toInsert.push({
-      tier,
-      lead_id:               `BLY-${String(nextNum++).padStart(6, '0')}`,
-      source_lead_id:        sourceId,
-      contact_name:          mapped['contact_name'] || null,
-      street_address:        mapped['street_address'] || null,
-      city:                  mapped['city'] || null,
-      state:                 mapped['state'] || null,
-      zip_code:              mapped['zip_code'] || null,
-      primary_phone:         mapped['primary_phone'] || null,
-      mobile_phone:          mapped['mobile_phone'] || null,
-      loan_amount:           mapped['loan_amount'] || null,
-      coverage_type:         mapped['coverage_type'] || null,
-      financial_institution: mapped['financial_institution'] || null,
-      auth_phrase:           uniquePhrase(usedPhrases),
-      is_sold:               false,
-    })
+    const leadId = `BLY-${String(nextNum++).padStart(6, '0')}`
+
+    if (isPassthrough) {
+      // Keep the original row exactly (minus any blank-named columns).
+      const raw = Object.fromEntries(
+        Object.entries(rows[idx]).filter(([k]) => k.trim() !== '')
+      )
+      toInsert.push({
+        tier,
+        lead_id:       leadId,
+        contact_name:  mapped['contact_name'] || null, // dedup only
+        primary_phone: mapped['primary_phone'] || null, // dedup only
+        raw_data:      raw,
+        auth_phrase:   uniquePhrase(usedPhrases),
+        is_sold:       false,
+      })
+    } else {
+      toInsert.push({
+        tier,
+        lead_id:               leadId,
+        source_lead_id:        sourceId,
+        contact_name:          mapped['contact_name'] || null,
+        street_address:        mapped['street_address'] || null,
+        city:                  mapped['city'] || null,
+        state:                 mapped['state'] || null,
+        zip_code:              mapped['zip_code'] || null,
+        primary_phone:         mapped['primary_phone'] || null,
+        mobile_phone:          mapped['mobile_phone'] || null,
+        loan_amount:           mapped['loan_amount'] || null,
+        coverage_type:         mapped['coverage_type'] || null,
+        financial_institution: mapped['financial_institution'] || null,
+        auth_phrase:           uniquePhrase(usedPhrases),
+        is_sold:               false,
+      })
+    }
   }
 
   let inserted = 0

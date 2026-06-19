@@ -62,13 +62,31 @@ export async function buildLeadsWorkbook(
 
     if (allLeads.length === 0) continue
 
-    const rows = allLeads.map(lead =>
-      COLUMNS.map(col => {
-        const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
-        return dbKey ? ((lead as Record<string, unknown>)[dbKey] ?? '') : ''
+    let sheet
+    if (order.tier === 'Data Leads') {
+      // Passthrough: deliver the original uploaded columns verbatim. Build the
+      // header from the union of raw_data keys (preserving first-seen order) so
+      // it works even if rows came from files with slightly different columns.
+      const cols: string[] = []
+      const seen = new Set<string>()
+      for (const lead of allLeads) {
+        const raw = ((lead as Record<string, unknown>).raw_data ?? {}) as Record<string, unknown>
+        for (const k of Object.keys(raw)) if (!seen.has(k)) { seen.add(k); cols.push(k) }
+      }
+      const rows = allLeads.map(lead => {
+        const raw = ((lead as Record<string, unknown>).raw_data ?? {}) as Record<string, unknown>
+        return cols.map(c => raw[c] ?? '')
       })
-    )
-    const sheet = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows])
+      sheet = XLSX.utils.aoa_to_sheet([cols, ...rows])
+    } else {
+      const rows = allLeads.map(lead =>
+        COLUMNS.map(col => {
+          const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
+          return dbKey ? ((lead as Record<string, unknown>)[dbKey] ?? '') : ''
+        })
+      )
+      sheet = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows])
+    }
     XLSX.utils.book_append_sheet(workbook, sheet, order.tier)
   }
 
