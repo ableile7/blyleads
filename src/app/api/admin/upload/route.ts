@@ -196,7 +196,9 @@ export async function POST(req: NextRequest) {
     const leadId = `BLY-${String(nextNum++).padStart(6, '0')}`
 
     if (isPassthrough) {
-      // Keep the original row exactly (minus any blank-named columns).
+      // Keep the original row exactly (minus any blank-named columns). jsonb
+      // doesn't preserve key order, so store the ordered column list separately
+      // (raw_columns) to reproduce the exact layout on download.
       const raw = Object.fromEntries(
         Object.entries(rows[idx]).filter(([k]) => k.trim() !== '')
       )
@@ -206,6 +208,7 @@ export async function POST(req: NextRequest) {
         contact_name:  mapped['contact_name'] || null, // dedup only
         primary_phone: mapped['primary_phone'] || null, // dedup only
         raw_data:      raw,
+        raw_columns:   Object.keys(raw),
         auth_phrase:   uniquePhrase(usedPhrases),
         is_sold:       false,
       })

@@ -64,14 +64,18 @@ export async function buildLeadsWorkbook(
 
     let sheet
     if (order.tier === 'Data Leads') {
-      // Passthrough: deliver the original uploaded columns verbatim. Build the
-      // header from the union of raw_data keys (preserving first-seen order) so
-      // it works even if rows came from files with slightly different columns.
+      // Passthrough: deliver the original uploaded columns verbatim, in their
+      // original order (from raw_columns, since jsonb doesn't keep key order).
+      // Union across leads preserves first-seen order and tolerates files with
+      // slightly different columns.
       const cols: string[] = []
       const seen = new Set<string>()
       for (const lead of allLeads) {
-        const raw = ((lead as Record<string, unknown>).raw_data ?? {}) as Record<string, unknown>
-        for (const k of Object.keys(raw)) if (!seen.has(k)) { seen.add(k); cols.push(k) }
+        const l = lead as Record<string, unknown>
+        const order = Array.isArray(l.raw_columns)
+          ? (l.raw_columns as string[])
+          : Object.keys((l.raw_data ?? {}) as Record<string, unknown>)
+        for (const k of order) if (!seen.has(k)) { seen.add(k); cols.push(k) }
       }
       const rows = allLeads.map(lead => {
         const raw = ((lead as Record<string, unknown>).raw_data ?? {}) as Record<string, unknown>
