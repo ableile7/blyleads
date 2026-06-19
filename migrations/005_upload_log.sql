@@ -12,6 +12,11 @@ create table if not exists upload_batches (
   uploaded_at timestamptz not null default now()
 );
 
+-- Admin-only data. Enable RLS with NO policies so the public/agent (anon) key
+-- can't read it; the app accesses this table only via the service-role key,
+-- which bypasses RLS.
+alter table upload_batches enable row level security;
+
 -- One-time backfill: reconstruct an approximate history from existing leads.
 -- Real filenames were never stored before logging existed, so these rows are
 -- grouped one-per-tier-per-day with a placeholder filename. Runs only while the
