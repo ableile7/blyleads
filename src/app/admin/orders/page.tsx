@@ -2,6 +2,15 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import FulfillButton from './FulfillButton'
 import ClearUnpaidButton from './ClearUnpaidButton'
+import ExportOrdersButton, { type ExportRow } from './ExportOrdersButton'
+
+// Effective price per lead after any promo discount (amount_collected already
+// reflects the discount; strip the 3% fee, ÷ quantity). Equals the list rate
+// when no discount was used.
+function effectivePerLead(o: Order): number {
+  if (o.amount_collected == null || !o.quantity) return Number(o.price_per_lead)
+  return Math.round(((Number(o.amount_collected) - 0.03 * Number(o.total_amount)) / o.quantity) * 100) / 100
+}
 
 type Order = {
   id: string
@@ -67,11 +76,34 @@ export default async function AdminOrdersPage() {
     return group.some(o => o.status === 'pending') && !(sid && paidSessions.has(sid))
   }).length
 
+  // One export row per session, mirroring the table.
+  const exportRows: ExportRow[] = sessions.map(group => {
+    const first = group[0]
+    const allPaid = group.every(o => o.status === 'paid')
+    const anyPending = group.some(o => o.status === 'pending')
+    const sid = first.stripe_session_id
+    const needsFulfillment = anyPending && !!sid && paidSessions.has(sid)
+    return {
+      agent: first.agents?.full_name ?? '',
+      email: first.agents?.email ?? '',
+      tiers: Array.from(new Set(group.map(o => o.tier))).join('; '),
+      leads: group.reduce((s, o) => s + o.quantity, 0),
+      priceList: Array.from(new Set(group.map(o => Number(o.price_per_lead).toFixed(2)))).join('; '),
+      priceAfterDiscount: Array.from(new Set(group.map(o => effectivePerLead(o).toFixed(2)))).join('; '),
+      total: group.reduce((s, o) => s + collected(o), 0).toFixed(2),
+      status: allPaid ? 'paid' : needsFulfillment ? 'paid · unfulfilled' : anyPending ? 'unpaid' : 'failed',
+      date: first.created_at,
+      downloaded: group.find(o => o.downloaded_at)?.downloaded_at ?? '',
+      sessionId: sid ?? '',
+    }
+  })
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-2xl font-bold text-gray-800">All Orders</h2>
         <div className="flex items-center gap-3">
+          <ExportOrdersButton rows={exportRows} />
           {unpaidCount > 0 && <ClearUnpaidButton count={unpaidCount} />}
           <div className="bg-white border border-gray-100 rounded-xl px-5 py-3 text-right">
             <p className="text-xs text-gray-500">Total Revenue</p>
@@ -114,9 +146,7 @@ export default async function AdminOrdersPage() {
               const perLeadCells = Array.from(
                 new Map(sessionOrders.map(o => {
                   const list = Number(o.price_per_lead)
-                  const eff = o.amount_collected != null && o.quantity
-                    ? Math.round(((Number(o.amount_collected) - 0.03 * Number(o.total_amount)) / o.quantity) * 100) / 100
-                    : list
+                  const eff = effectivePerLead(o)
                   return [`${list}_${eff}`, { list, eff }]
                 })).values()
               )
