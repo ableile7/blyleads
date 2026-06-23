@@ -106,10 +106,20 @@ export default async function AdminOrdersPage() {
                 : 'failed'
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
               const hasPaidLeads = sessionOrders.some(o => o.status === 'paid')
-              // Price per lead at time of purchase. Usually one value; if a
-              // session mixed tiers at different rates, show each distinct rate.
-              const perLeadPrices = Array.from(new Set(sessionOrders.map(o => Number(o.price_per_lead))))
-              const perLead = perLeadPrices.map(p => `$${p.toFixed(2)}`).join(' / ')
+              // Price per lead. List rate is price_per_lead; the EFFECTIVE rate
+              // after any promo discount is derived from amount_collected (which
+              // already reflects the discount) minus the 3% processing fee, ÷
+              // quantity. With no discount the two are equal. Dedupe by list rate
+              // so mixed-tier sessions show each distinct rate.
+              const perLeadCells = Array.from(
+                new Map(sessionOrders.map(o => {
+                  const list = Number(o.price_per_lead)
+                  const eff = o.amount_collected != null && o.quantity
+                    ? Math.round(((Number(o.amount_collected) - 0.03 * Number(o.total_amount)) / o.quantity) * 100) / 100
+                    : list
+                  return [`${list}_${eff}`, { list, eff }]
+                })).values()
+              )
 
               return (
                 <tr key={first.stripe_session_id || first.id} className="hover:bg-gray-50 transition">
@@ -123,7 +133,18 @@ export default async function AdminOrdersPage() {
                     </div>
                   </td>
                   <td className="px-5 py-4 text-gray-700">{totalLeads}</td>
-                  <td className="px-5 py-4 text-gray-700">{perLead}</td>
+                  <td className="px-5 py-4 text-gray-700">
+                    <div className="flex flex-col gap-0.5">
+                      {perLeadCells.map((c, i) => c.eff < c.list - 0.005 ? (
+                        <span key={i}>
+                          <span className="font-semibold text-green-700">${c.eff.toFixed(2)}</span>{' '}
+                          <span className="text-gray-300 line-through">${c.list.toFixed(2)}</span>
+                        </span>
+                      ) : (
+                        <span key={i}>${c.list.toFixed(2)}</span>
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-5 py-4 font-semibold text-gray-800">${totalAmount.toFixed(2)}</td>
                   <td className="px-5 py-4">
                     <span className={`text-xs font-semibold capitalize ${
