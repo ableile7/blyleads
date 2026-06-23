@@ -10,7 +10,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-gray-50">
       <header className="bg-[#1F3864] text-white px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="text-xl font-bold">BlyLeads</span>
+          <div className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/emblem.png" alt="BlyLeads" className="h-9 w-auto" />
+            <span className="text-xl font-bold">BlyLeads</span>
+          </div>
           <span className="text-xs bg-white/20 px-2 py-1 rounded font-semibold">Admin</span>
         </div>
         <nav className="flex items-center gap-1">
