@@ -7,6 +7,7 @@ type Order = {
   id: string
   tier: string
   quantity: number
+  price_per_lead: number
   total_amount: number
   amount_collected: number | null
   status: string
@@ -83,7 +84,7 @@ export default async function AdminOrdersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {['Agent', 'Tiers', 'Leads', 'Total', 'Status', 'Date', 'Downloaded', ''].map(h => (
+              {['Agent', 'Tiers', 'Leads', '$/Lead', 'Total', 'Status', 'Date', 'Downloaded', ''].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -105,6 +106,10 @@ export default async function AdminOrdersPage() {
                 : 'failed'
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
               const hasPaidLeads = sessionOrders.some(o => o.status === 'paid')
+              // Price per lead at time of purchase. Usually one value; if a
+              // session mixed tiers at different rates, show each distinct rate.
+              const perLeadPrices = Array.from(new Set(sessionOrders.map(o => Number(o.price_per_lead))))
+              const perLead = perLeadPrices.map(p => `$${p.toFixed(2)}`).join(' / ')
 
               return (
                 <tr key={first.stripe_session_id || first.id} className="hover:bg-gray-50 transition">
@@ -118,6 +123,7 @@ export default async function AdminOrdersPage() {
                     </div>
                   </td>
                   <td className="px-5 py-4 text-gray-700">{totalLeads}</td>
+                  <td className="px-5 py-4 text-gray-700">{perLead}</td>
                   <td className="px-5 py-4 font-semibold text-gray-800">${totalAmount.toFixed(2)}</td>
                   <td className="px-5 py-4">
                     <span className={`text-xs font-semibold capitalize ${
@@ -153,7 +159,7 @@ export default async function AdminOrdersPage() {
               )
             })}
             {sessions.length === 0 && (
-              <tr><td colSpan={8} className="px-5 py-10 text-center text-gray-400">No orders yet.</td></tr>
+              <tr><td colSpan={9} className="px-5 py-10 text-center text-gray-400">No orders yet.</td></tr>
             )}
           </tbody>
         </table>
