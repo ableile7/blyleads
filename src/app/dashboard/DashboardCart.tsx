@@ -12,6 +12,8 @@ const TIER_CATEGORY: Record<string, string> = {
   Essential: 'Aged Mortgage Protection',
 }
 const PROMO_CODES: Record<string, number> = { 'ELG10': 0.10 }
+// 100%-off codes (free). The server enforces which agent each is locked to.
+const FREE_CODES = ['STARRFREE']
 
 export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({})
@@ -29,7 +31,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
   function applyPromo() {
     const code = promoInput.trim().toUpperCase()
-    if (PROMO_CODES[code]) {
+    if (PROMO_CODES[code] || FREE_CODES.includes(code)) {
       setAppliedPromo(code)
       setPromoError('')
     } else {
@@ -54,8 +56,9 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
   const totalLeads = cartItems.reduce((s, i) => s + i.quantity, 0)
   const subtotal = cartItems.reduce((s, i) => s + i.quantity * i.pricePerLead, 0)
-  const discount = appliedPromo ? totalLeads * PROMO_CODES[appliedPromo] : 0
-  const totalPrice = subtotal - discount
+  const isFreePromo = appliedPromo ? FREE_CODES.includes(appliedPromo) : false
+  const discount = isFreePromo ? subtotal : (appliedPromo ? totalLeads * PROMO_CODES[appliedPromo] : 0)
+  const totalPrice = Math.max(0, subtotal - discount)
 
   async function handleCheckout() {
     if (totalLeads === 0) return
@@ -128,7 +131,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
             {discount > 0 && (
               <div className="flex items-center justify-between text-sm pt-2 border-t border-white/10">
-                <span className="text-green-400">Promo ({appliedPromo}) −$0.10/lead</span>
+                <span className="text-green-400">{isFreePromo ? `Promo (${appliedPromo}) — 100% off` : `Promo (${appliedPromo}) −$${PROMO_CODES[appliedPromo!].toFixed(2)}/lead`}</span>
                 <span className="font-semibold text-green-400">−${discount.toFixed(2)}</span>
               </div>
             )}

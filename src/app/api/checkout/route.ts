@@ -6,6 +6,8 @@ import { randomUUID } from 'crypto'
 type CartItem = { tier: string; quantity: number; states?: string[] }
 
 const PROMO_CODES: Record<string, number> = { 'ELG10': 0.10 }
+// 100%-off codes locked to a specific agent email (free leads — keep restricted).
+const FREE_CODES: Record<string, string> = { 'STARRFREE': 'davidstarr.pinnacle@gmail.com' }
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -61,15 +63,26 @@ export async function POST(req: NextRequest) {
 
   // Apply promo discount via Stripe coupon
   let stripeCoupon: string | undefined
-  const discountPerLead = promoCode ? PROMO_CODES[promoCode.toUpperCase()] : undefined
-  if (discountPerLead) {
-    const coupon = await stripe.coupons.create({
-      amount_off: Math.round(totalLeads * discountPerLead * 100),
-      currency: 'usd',
-      duration: 'once',
-      name: `Promo: ${promoCode!.toUpperCase()}`,
-    })
+  const code = promoCode?.toUpperCase()
+  const freeForEmail = code ? FREE_CODES[code] : undefined
+  if (freeForEmail) {
+    // 100%-off code — only valid for the agent it's locked to.
+    if ((user.email || '').toLowerCase() !== freeForEmail.toLowerCase()) {
+      return NextResponse.json({ error: 'This promo code is not valid for your account.' }, { status: 400 })
+    }
+    const coupon = await stripe.coupons.create({ percent_off: 100, duration: 'once', name: `Free: ${code}` })
     stripeCoupon = coupon.id
+  } else {
+    const discountPerLead = code ? PROMO_CODES[code] : undefined
+    if (discountPerLead) {
+      const coupon = await stripe.coupons.create({
+        amount_off: Math.round(totalLeads * discountPerLead * 100),
+        currency: 'usd',
+        duration: 'once',
+        name: `Promo: ${code}`,
+      })
+      stripeCoupon = coupon.id
+    }
   }
 
   const session = await stripe.checkout.sessions.create({
