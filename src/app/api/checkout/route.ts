@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto'
 
 type CartItem = { tier: string; quantity: number; states?: string[] }
 
-const PROMO_CODES: Record<string, number> = { 'ELG10': 0.10 }
+const PROMO_CODES: Record<string, number> = { 'ELG2025': 0.10 }
 // 100%-off codes locked to a specific agent email (free leads — keep restricted).
 const FREE_CODES: Record<string, string> = { 'STARRFREE': 'davidstarr.pinnacle@gmail.com' }
 
