@@ -11,7 +11,7 @@ const TIER_CATEGORY: Record<string, string> = {
   Premier: 'Aged Mortgage Protection', Core: 'Aged Mortgage Protection',
   Essential: 'Aged Mortgage Protection',
 }
-const PROMO_CODES: Record<string, number> = { 'ELG2025': 0.10 }
+const PROMO_CODES: Record<string, number> = { 'ELG2026': 0.10 }
 // 100%-off codes (free). The server enforces which agent each is locked to.
 const FREE_CODES = ['STARRFREE']
 
