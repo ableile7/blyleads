@@ -33,6 +33,28 @@ export default async function DashboardPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* Promo: Mortgage Protection Data Leads (sold direct, text Alex) */}
+        <div className="mb-10 rounded-2xl border border-[#0f766e]/50 bg-gradient-to-r from-[#06201d]/90 to-[#08231f]/60 px-6 py-5 shadow-[0_0_50px_-14px_rgba(20,184,166,0.45)]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[#5fd4c4] font-bold text-lg tracking-wide">📲 Mortgage Protection Data Leads — Available Now</p>
+              <p className="text-slate-300 text-sm mt-1.5">
+                <span className="font-semibold text-white">$0.30/lead</span>
+                <span className="text-slate-500"> · </span>
+                States: <span className="font-semibold text-white">MO, IL, IN, KY, OK</span>
+                <span className="text-slate-500"> · </span>
+                <span className="italic">Bulk discounts available</span>
+              </p>
+            </div>
+            <a
+              href="sms:+14198893444"
+              className="shrink-0 text-center bg-[#0f766e] hover:bg-[#13988c] text-white font-semibold text-sm px-5 py-3 rounded-xl transition whitespace-nowrap shadow-[0_0_30px_-8px_rgba(20,184,166,0.6)]"
+            >
+              Text Alex · (419) 889-3444
+            </a>
+          </div>
+        </div>
+
         <p className="label-premium mb-2">Marketplace</p>
         <h2 className="text-3xl font-bold text-chrome tracking-wide mb-2">Available Leads</h2>
         <p className="text-slate-400 text-sm mb-10">Enter quantities by state for any tier, then purchase all at once.</p>
