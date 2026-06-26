@@ -25,38 +25,38 @@ export default async function AdminUploadPage() {
         Duplicate leads are skipped automatically.
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <UploadForm />
+      <UploadForm />
 
-        <div>
-          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Upload History</h3>
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {['File', 'Tier', 'Added', 'Skipped', 'Date'].map(h => (
-                    <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                  ))}
+      <div className="mt-12">
+        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Upload History</h3>
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">File</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tier</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Added</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Skipped</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {(batches as Batch[] | null)?.map(b => (
+                <tr key={b.id} className="hover:bg-gray-50 transition">
+                  <td className="px-5 py-3 text-gray-800 font-medium">{b.filename}</td>
+                  <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{b.tier ?? '—'}</td>
+                  <td className="px-5 py-3 text-gray-800 font-semibold text-right tabular-nums">{b.inserted.toLocaleString()}</td>
+                  <td className="px-5 py-3 text-gray-400 text-right tabular-nums">{b.skipped ? b.skipped.toLocaleString() : '—'}</td>
+                  <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
+                    {new Date(b.uploaded_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {(batches as Batch[] | null)?.map(b => (
-                  <tr key={b.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-2.5 text-gray-800 max-w-[220px] truncate" title={b.filename}>{b.filename}</td>
-                    <td className="px-4 py-2.5 text-gray-600">{b.tier ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-gray-700 font-medium">{b.inserted.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-gray-400">{b.skipped ? b.skipped.toLocaleString() : '—'}</td>
-                    <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">
-                      {new Date(b.uploaded_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                    </td>
-                  </tr>
-                ))}
-                {(!batches || batches.length === 0) && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No uploads yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {(!batches || batches.length === 0) && (
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">No uploads yet.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
