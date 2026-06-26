@@ -22,7 +22,7 @@ export default async function AdminUploadPage() {
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Leads</h2>
       <p className="text-gray-500 text-sm mb-8">
-        Upload a CSV batch. Tier is detected from the filename (BRONZE → Prime, COPPER → Select, RUBY → Premier, GOLD → Core, SILVER → Essential, DATA → Data Leads).
+        Upload a CSV batch. Tier is detected from the filename (APEX → Apex, BRONZE → Prime, COPPER → Select, RUBY → Premier, GOLD → Core, SILVER → Essential, DATA → Data Leads).
         Duplicate leads are skipped automatically.
       </p>
 

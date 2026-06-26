@@ -90,7 +90,7 @@ export default function UploadForm() {
       const file = files[i]
       const tier = detectTier(file.name)
       if (!tier) {
-        updateResult(i, { status: 'error', error: 'Filename must contain BRONZE, COPPER, RUBY, GOLD, or SILVER' })
+        updateResult(i, { status: 'error', error: 'Filename must contain APEX, BRONZE, COPPER, RUBY, GOLD, SILVER, or DATA' })
         continue
       }
 
@@ -149,7 +149,7 @@ export default function UploadForm() {
           ) : (
             <>
               <p className="text-sm font-semibold text-gray-600">Drop files here or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">Large files supported — filenames must contain BRONZE, COPPER, RUBY, GOLD, or SILVER</p>
+              <p className="text-xs text-gray-400 mt-1">Large files supported — filenames must contain APEX, BRONZE, COPPER, RUBY, GOLD, SILVER, or DATA</p>
             </>
           )}
           <input ref={fileRef} type="file" accept=".csv" multiple className="hidden" onChange={handleSelect} />
@@ -221,6 +221,7 @@ export default function UploadForm() {
       <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-6">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Filename → Tier Detection</p>
         <div className="space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-gray-500">Contains APEX</span><span className="font-semibold text-[#b8860b]">Apex</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains BRONZE</span><span className="font-semibold text-[#1F3864]">Prime</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains COPPER</span><span className="font-semibold text-[#2d4a1e]">Select</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains RUBY</span><span className="font-semibold text-[#4a1e3a]">Premier</span></div>
