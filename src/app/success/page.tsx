@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { fulfillPaidSession } from '@/lib/fulfillment'
+import { tierLabel } from '@/lib/tiers'
 import { redirect } from 'next/navigation'
 
 export default async function SuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
@@ -106,7 +107,7 @@ function TierBadge({ tier }: { tier: string }) {
   }
   return (
     <span className={`text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
-      {tier}
+      {tierLabel(tier)}
     </span>
   )
 }

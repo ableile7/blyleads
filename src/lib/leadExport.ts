@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { tierLabel } from './tiers'
 
 // DB column -> CSV/Excel header, in output order.
 export const DB_TO_CSV: Record<string, string> = {
@@ -86,12 +87,15 @@ export async function buildLeadsWorkbook(
       const rows = allLeads.map(lead =>
         COLUMNS.map(col => {
           const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
-          return dbKey ? ((lead as Record<string, unknown>)[dbKey] ?? '') : ''
+          if (!dbKey) return ''
+          const val = (lead as Record<string, unknown>)[dbKey]
+          // Show the display label (e.g. "Apex Core") in the List Code column.
+          return dbKey === 'tier' ? tierLabel(String(val ?? '')) : (val ?? '')
         })
       )
       sheet = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows])
     }
-    XLSX.utils.book_append_sheet(workbook, sheet, order.tier)
+    XLSX.utils.book_append_sheet(workbook, sheet, tierLabel(order.tier).slice(0, 31))
   }
 
   if (workbook.SheetNames.length === 0) return null

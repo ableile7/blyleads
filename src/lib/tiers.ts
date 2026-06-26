@@ -22,3 +22,13 @@ export function detectTier(filename: string): Tier | null {
 export function isValidTier(t: string): t is Tier {
   return (VALID_TIERS as readonly string[]).includes(t)
 }
+
+// Display label shown to users (badges, headers). The underlying tier value
+// stays stable so leads/pricing/uploads/colors don't need to change.
+export const TIER_DISPLAY: Record<string, string> = {
+  Apex: 'Apex Core',
+  'A-Tier': 'Apex Essential',
+}
+export function tierLabel(tier: string): string {
+  return TIER_DISPLAY[tier] || tier
+}

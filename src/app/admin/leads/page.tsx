@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import { tierLabel } from '@/lib/tiers'
 
 const TIERS = ['Apex', 'A-Tier', 'Select', 'Prime', 'Premier', 'Essential', 'Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023', 'Data Leads']
 
@@ -37,7 +38,7 @@ export default async function AdminLeadsPage() {
           const soldPct = s.total > 0 ? Math.round((s.sold / s.total) * 100) : 0
           return (
             <div key={s.tier} className="bg-white rounded-2xl border border-gray-100 p-6">
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${c.badge}`}>{s.tier}</span>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${c.badge}`}>{tierLabel(s.tier)}</span>
               <div className="mt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Total</span>

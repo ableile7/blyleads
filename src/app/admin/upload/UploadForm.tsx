@@ -221,8 +221,8 @@ export default function UploadForm() {
       <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-6">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Filename → Tier Detection</p>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-gray-500">Contains APEX</span><span className="font-semibold text-[#b8860b]">Apex</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Contains A-TIER</span><span className="font-semibold text-gray-600">A-Tier</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains APEX</span><span className="font-semibold text-[#b8860b]">Apex Core</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains A-TIER</span><span className="font-semibold text-gray-600">Apex Essential</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains BRONZE</span><span className="font-semibold text-[#1F3864]">Prime</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains COPPER</span><span className="font-semibold text-[#2d4a1e]">Select</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains RUBY</span><span className="font-semibold text-[#4a1e3a]">Premier</span></div>

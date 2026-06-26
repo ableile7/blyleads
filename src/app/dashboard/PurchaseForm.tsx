@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { tierLabel } from '@/lib/tiers'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 type StateCount = { state: string; count: number }
@@ -19,7 +20,7 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; g
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {
-  Apex:      { year: '★ S-Tier · 3-6 mo', description: 'Our freshest, highest-quality mortgage protection leads — complete profiles, roughly 3-6 months old. Top of the line.' },
+  Apex:      { year: '★ S-Tier · 3-6 mo', description: 'Our freshest, highest-quality mortgage protection leads — complete profiles, roughly 3-6 months old.' },
   'A-Tier':  { year: 'A-Tier · 9-12 mo', description: 'High-quality mortgage protection leads — complete profiles, roughly 9-12 months old.' },
   Prime:     { year: '2023',    description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
   Select:    { year: '2022',    description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
@@ -69,7 +70,7 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
   return (
     <div className={`rounded-2xl border ${c.border} ${c.bg} ${c.glow} backdrop-blur-sm p-6 flex flex-col gap-4 transition-shadow duration-300`}>
       <div className="flex items-center justify-between">
-        <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${c.badge}`}>{tier.tier}</span>
+        <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${c.badge}`}>{tierLabel(tier.tier)}</span>
         <span className="text-2xl font-bold text-chrome">
           ${tier.price_per_lead.toFixed(2)}<span className="text-sm font-normal text-slate-500">/lead</span>
         </span>

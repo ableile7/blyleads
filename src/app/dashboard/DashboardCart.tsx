@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import PurchaseForm from './PurchaseForm'
+import { tierLabel } from '@/lib/tiers'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
@@ -199,7 +200,7 @@ function TierBadge({ tier }: { tier: string }) {
   }
   return (
     <span className={`text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
-      {tier}
+      {tierLabel(tier)}
     </span>
   )
 }

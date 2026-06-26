@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { tierLabel } from '@/lib/tiers'
 import { redirect } from 'next/navigation'
 
 type Order = {
@@ -144,7 +145,7 @@ function TierBadge({ tier }: { tier: string }) {
   }
   return (
     <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
-      {tier}
+      {tierLabel(tier)}
     </span>
   )
 }

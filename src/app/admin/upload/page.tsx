@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import UploadForm from './UploadForm'
 import LocalDateTime from './LocalDateTime'
+import { tierLabel } from '@/lib/tiers'
 
 type Batch = {
   id: string
@@ -22,7 +23,7 @@ export default async function AdminUploadPage() {
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Leads</h2>
       <p className="text-gray-500 text-sm mb-8">
-        Upload a CSV batch. Tier is detected from the filename (APEX → Apex, A-TIER → A-Tier, BRONZE → Prime, COPPER → Select, RUBY → Premier, GOLD → Core, SILVER → Essential, DATA → Data Leads).
+        Upload a CSV batch. Tier is detected from the filename (APEX → Apex Core, A-TIER → Apex Essential, BRONZE → Prime, COPPER → Select, RUBY → Premier, GOLD → Core, SILVER → Essential, DATA → Data Leads).
         Duplicate leads are skipped automatically.
       </p>
 
@@ -45,7 +46,7 @@ export default async function AdminUploadPage() {
               {(batches as Batch[] | null)?.map(b => (
                 <tr key={b.id} className="hover:bg-gray-50 transition">
                   <td className="px-5 py-3 text-gray-800 font-medium">{b.filename}</td>
-                  <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{b.tier ?? '—'}</td>
+                  <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{b.tier ? tierLabel(b.tier) : '—'}</td>
                   <td className="px-5 py-3 text-gray-800 font-semibold text-right tabular-nums">{b.inserted.toLocaleString()}</td>
                   <td className="px-5 py-3 text-gray-400 text-right tabular-nums">{b.skipped ? b.skipped.toLocaleString() : '—'}</td>
                   <td className="px-5 py-3 text-gray-500 whitespace-nowrap">

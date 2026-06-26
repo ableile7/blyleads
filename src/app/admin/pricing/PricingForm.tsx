@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { tierLabel } from '@/lib/tiers'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number; is_active: boolean }
 
@@ -42,7 +43,7 @@ export default function PricingForm({ tier }: { tier: Tier }) {
   return (
     <div className={`rounded-2xl border-2 p-6 flex flex-col gap-4 ${TIER_STYLES[tier.tier] || 'border-gray-200 bg-white'}`}>
       <div className="flex items-center justify-between">
-        <span className="font-bold text-gray-800 text-lg">{tier.tier}</span>
+        <span className="font-bold text-gray-800 text-lg">{tierLabel(tier.tier)}</span>
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)}
             className="w-4 h-4 accent-[#1F3864]" />
