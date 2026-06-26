@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import UploadForm from './UploadForm'
+import LocalDateTime from './LocalDateTime'
 
 type Batch = {
   id: string
@@ -48,7 +49,7 @@ export default async function AdminUploadPage() {
                   <td className="px-5 py-3 text-gray-800 font-semibold text-right tabular-nums">{b.inserted.toLocaleString()}</td>
                   <td className="px-5 py-3 text-gray-400 text-right tabular-nums">{b.skipped ? b.skipped.toLocaleString() : '—'}</td>
                   <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
-                    {new Date(b.uploaded_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    <LocalDateTime iso={b.uploaded_at} />
                   </td>
                 </tr>
               ))}
