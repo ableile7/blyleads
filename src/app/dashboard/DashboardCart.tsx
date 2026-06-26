@@ -7,7 +7,7 @@ type Tier = { tier: string; price_per_lead: number; available_count: number }
 const TIER_ORDER = ['Apex', 'Core 2023', 'Core 2021-2022', 'Core 2018-2020', 'Premier', 'Prime', 'Select', 'Essential', 'Core', 'Data Leads']
 
 const TIER_CATEGORY: Record<string, string> = {
-  Apex: 'Aged Mortgage Protection',
+  Apex: 'Highest Quality Aged Mortgage Protection',
   Select: 'Aged Mortgage Protection', Prime: 'Aged Mortgage Protection',
   Premier: 'Aged Mortgage Protection', Core: 'Aged Mortgage Protection',
   Essential: 'Aged Mortgage Protection',
