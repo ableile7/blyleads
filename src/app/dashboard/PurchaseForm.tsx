@@ -20,8 +20,11 @@ const TIER_INFO: Record<string, { year: string; description: string }> = {
   Prime:     { year: '2023',    description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
   Select:    { year: '2022',    description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
   Premier:   { year: '2024',    description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
-  Core:      { year: '12+ mo',  description: 'Aged mortgage protection leads, 12+ months. The prospect previously expressed interest in coverage.' },
-  Essential: { year: '36+ mo',  description: 'Aged mortgage protection leads, 36+ months. The prospect previously expressed interest in coverage.' },
+  Core:      { year: 'Complete', description: 'Complete leads — the full client profile was captured when the lead was generated.' },
+  Essential: { year: 'Partial',  description: 'Partial leads — only some client details were captured when the lead was generated.' },
+  'Core 2018-2020': { year: 'Complete', description: 'Complete leads — the full client profile was captured when the lead was generated.' },
+  'Core 2021-2022': { year: 'Complete', description: 'Complete leads — the full client profile was captured when the lead was generated.' },
+  'Core 2023':      { year: 'Complete', description: 'Complete leads — the full client profile was captured when the lead was generated.' },
 }
 
 type Props = {
