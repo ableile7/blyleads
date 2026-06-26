@@ -102,6 +102,7 @@ function TierBadge({ tier }: { tier: string }) {
     'Core 2021-2022': 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
     'Core 2023': 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
     Apex: 'bg-gradient-to-r from-[#3a2900] to-[#5c4200] text-[#ffd24a] border border-[#e0b020]/70',
+    'A-Tier': 'bg-gradient-to-r from-[#23272d] to-[#363c44] text-[#e2e8f0] border border-[#828b96]/60',
   }
   return (
     <span className={`text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
