@@ -18,7 +18,7 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; g
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {
-  Apex:      { year: '★ S-Tier · Fresh', description: 'Our freshest, highest-quality mortgage protection leads — complete profiles, roughly 3 months old. Top of the line.' },
+  Apex:      { year: '★ S-Tier · 9-12 mo', description: 'Our highest-quality mortgage protection leads — complete profiles, roughly 9-12 months old. Top of the line.' },
   Prime:     { year: '2023',    description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
   Select:    { year: '2022',    description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
   Premier:   { year: '2024',    description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },
