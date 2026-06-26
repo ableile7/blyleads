@@ -5,6 +5,7 @@ type Tier = { tier: string; price_per_lead: number; available_count: number }
 type StateCount = { state: string; count: number }
 
 const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; glow: string }> = {
+  Apex:      { badge: 'bg-gradient-to-r from-[#3a2900] to-[#5c4200] text-[#ffd24a] border border-[#e0b020]/70', bg: 'bg-gradient-to-b from-[#2a1d00]/90 to-[#120c00]/96', border: 'border-[#e0b020]/55', glow: 'shadow-[0_0_36px_-8px_rgba(255,205,55,0.5)] hover:shadow-[0_0_64px_-4px_rgba(255,205,55,0.75)]' },
   Prime:     { badge: 'bg-[#1a3a7a]/80 text-[#7eb3ff] border border-[#2d5a9e]/50', bg: 'bg-gradient-to-b from-[#0c1830]/90 to-[#070d1a]/95', border: 'border-[#2d5a9e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(45,106,246,0.4)]' },
   Select:    { badge: 'bg-[#0f2b14]/80 text-[#7ecc8f] border border-[#2d7a3e]/50', bg: 'bg-gradient-to-b from-[#0c1f10]/90 to-[#060f08]/95', border: 'border-[#2d7a3e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(60,180,90,0.35)]' },
   Premier:   { badge: 'bg-[#2a0f2e]/80 text-[#d47ef0] border border-[#7a2d9e]/50', bg: 'bg-gradient-to-b from-[#1c0e20]/90 to-[#0e0612]/95', border: 'border-[#7a2d9e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(170,80,220,0.4)]' },
@@ -17,6 +18,7 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; g
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {
+  Apex:      { year: '★ S-Tier · Fresh', description: 'Our freshest, highest-quality mortgage protection leads — complete profiles, roughly 3 months old. Top of the line.' },
   Prime:     { year: '2023',    description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },
   Select:    { year: '2022',    description: 'Previously sold incomplete leads from 2022. The prospect disconnected before completing the qualification process.' },
   Premier:   { year: '2024',    description: 'Previously sold incomplete leads from 2024. The prospect disconnected before completing the qualification process.' },

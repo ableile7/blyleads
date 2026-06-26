@@ -4,9 +4,10 @@ import PurchaseForm from './PurchaseForm'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
-const TIER_ORDER = ['Select', 'Prime', 'Premier', 'Essential', 'Core', 'Core 2023', 'Core 2021-2022', 'Core 2018-2020', 'Data Leads']
+const TIER_ORDER = ['Apex', 'Core 2023', 'Core 2021-2022', 'Core 2018-2020', 'Premier', 'Prime', 'Select', 'Essential', 'Core', 'Data Leads']
 
 const TIER_CATEGORY: Record<string, string> = {
+  Apex: 'Aged Mortgage Protection',
   Select: 'Aged Mortgage Protection', Prime: 'Aged Mortgage Protection',
   Premier: 'Aged Mortgage Protection', Core: 'Aged Mortgage Protection',
   Essential: 'Aged Mortgage Protection',
@@ -192,6 +193,7 @@ function TierBadge({ tier }: { tier: string }) {
     'Core 2018-2020': 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
     'Core 2021-2022': 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
     'Core 2023': 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
+    Apex: 'bg-gradient-to-r from-[#3a2900] to-[#5c4200] text-[#ffd24a] border border-[#e0b020]/70',
   }
   return (
     <span className={`text-xs font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full ${styles[tier] || 'bg-white/10 text-slate-300'}`}>
