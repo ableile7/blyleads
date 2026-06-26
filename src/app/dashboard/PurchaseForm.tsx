@@ -69,9 +69,9 @@ export default function PurchaseForm({ tier, quantities, onQuantitiesChange }: P
 
   return (
     <div className={`rounded-2xl border ${c.border} ${c.bg} ${c.glow} backdrop-blur-sm p-6 flex flex-col gap-4 transition-shadow duration-300`}>
-      <div className="flex items-center justify-between">
-        <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${c.badge}`}>{tierLabel(tier.tier)}</span>
-        <span className="text-2xl font-bold text-chrome">
+      <div className="flex items-center justify-between gap-3">
+        <span className={`text-xs font-bold tracking-wide uppercase px-3 py-1 rounded-full whitespace-nowrap ${c.badge}`}>{tierLabel(tier.tier)}</span>
+        <span className="text-2xl font-bold text-chrome whitespace-nowrap shrink-0">
           ${tier.price_per_lead.toFixed(2)}<span className="text-sm font-normal text-slate-500">/lead</span>
         </span>
       </div>
