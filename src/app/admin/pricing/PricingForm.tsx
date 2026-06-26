@@ -11,6 +11,9 @@ const TIER_STYLES: Record<string, string> = {
   Core:      'border-[#c9a227] bg-[#fbf3d9]',
   Essential: 'border-[#8a97a8] bg-[#eef1f4]',
   'Data Leads': 'border-[#0f9e8e] bg-[#d6f3ef]',
+  'Core 2018-2020': 'border-[#c9a227] bg-[#fbf3d9]',
+  'Core 2021-2022': 'border-[#c9a227] bg-[#fbf3d9]',
+  'Core 2023': 'border-[#c9a227] bg-[#fbf3d9]',
 }
 
 export default function PricingForm({ tier }: { tier: Tier }) {

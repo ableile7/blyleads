@@ -1,6 +1,6 @@
 // Tier definitions shared by the upload UI (client) and the upload API (server).
 
-export const VALID_TIERS = ['Prime', 'Select', 'Premier', 'Core', 'Essential', 'Data Leads'] as const
+export const VALID_TIERS = ['Prime', 'Select', 'Premier', 'Core', 'Essential', 'Data Leads', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023'] as const
 export type Tier = (typeof VALID_TIERS)[number]
 
 // Source keyword (in the filename) -> BlyLeads tier. The specific vendor source

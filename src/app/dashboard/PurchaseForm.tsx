@@ -11,6 +11,9 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; g
   Core:      { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
   Essential: { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
   'Data Leads': { badge: 'bg-[#06201d]/80 text-[#5fd4c4] border border-[#0f766e]/50', bg: 'bg-gradient-to-b from-[#08231f]/90 to-[#04100e]/95', border: 'border-[#0f766e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(20,184,166,0.35)]' },
+  'Core 2018-2020': { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
+  'Core 2021-2022': { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
+  'Core 2023': { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {

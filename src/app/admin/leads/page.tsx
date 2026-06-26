@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 
-const TIERS = ['Select', 'Prime', 'Premier', 'Essential', 'Core', 'Data Leads']
+const TIERS = ['Select', 'Prime', 'Premier', 'Essential', 'Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023', 'Data Leads']
 
 export default async function AdminLeadsPage() {
   const supabase = createAdminClient()
@@ -21,6 +21,9 @@ export default async function AdminLeadsPage() {
     Core:      { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
     Essential: { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
     'Data Leads': { badge: 'bg-[#0f5a52] text-white', bar: 'bg-[#14b8a6]' },
+    'Core 2018-2020': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
+    'Core 2021-2022': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
+    'Core 2023': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
   }
 
   return (

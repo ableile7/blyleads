@@ -227,6 +227,9 @@ function TierBadge({ tier }: { tier: string }) {
     Core:      'bg-[#fbf3d9] text-[#6b5500]',
     Essential: 'bg-[#eef1f4] text-[#3a4452]',
     'Data Leads': 'bg-[#d6f3ef] text-[#0f5a52]',
+    'Core 2018-2020': 'bg-[#fbf3d9] text-[#6b5500]',
+    'Core 2021-2022': 'bg-[#fbf3d9] text-[#6b5500]',
+    'Core 2023': 'bg-[#fbf3d9] text-[#6b5500]',
   }
   return <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>{tier}</span>
 }
