@@ -14,6 +14,7 @@ type FileResult = {
   processed?: number
   inserted?: number
   skipped?: number
+  skippedRows?: Record<string, string>[]
   error?: string
 }
 
@@ -63,7 +64,22 @@ export default function UploadForm() {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Upload failed')
-    return data as { inserted: number; skipped: number }
+    return data as { inserted: number; skipped: number; skippedRows?: Record<string, string>[] }
+  }
+
+  // Download the skipped duplicates as a CSV (original columns + Skip Reason).
+  function downloadDuplicates(name: string, rows: Record<string, string>[]) {
+    if (rows.length === 0) return
+    const headers = Array.from(rows.reduce((set, r) => { Object.keys(r).forEach(k => set.add(k)); return set }, new Set<string>()))
+    const esc = (v: string) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
+    const lines = [headers.join(',')]
+    for (const r of rows) lines.push(headers.map(h => esc(r[h] ?? '')).join(','))
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `duplicates-${name.replace(/\.csv$/i, '')}.csv`
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
   }
 
   async function handleUpload() {
@@ -85,14 +101,16 @@ export default function UploadForm() {
         updateResult(i, { status: 'uploading', total, processed: 0, inserted: 0, skipped: 0 })
 
         let inserted = 0, skipped = 0, processed = 0
+        const skippedRows: Record<string, string>[] = []
         for (let c = 0; c < rows.length; c += CHUNK_SIZE) {
           const chunk = rows.slice(c, c + CHUNK_SIZE)
           const isLast = c + CHUNK_SIZE >= rows.length
           const r = await uploadChunk(tier, chunk, isLast)
           inserted += r.inserted; skipped += r.skipped; processed += chunk.length
+          if (r.skippedRows) skippedRows.push(...r.skippedRows)
           updateResult(i, { processed, inserted, skipped })
         }
-        updateResult(i, { status: 'done', inserted, skipped })
+        updateResult(i, { status: 'done', inserted, skipped, skippedRows })
         // Record the upload in the history log (best-effort).
         try {
           await fetch('/api/admin/upload-log', {
@@ -162,7 +180,17 @@ export default function UploadForm() {
                         </p>
                       )}
                       {r.status === 'done' && (
-                        <p className="text-green-600 mt-0.5">{(r.inserted ?? 0).toLocaleString()} added{r.skipped ? `, ${(r.skipped).toLocaleString()} skipped (duplicates)` : ''} of {(r.total ?? 0).toLocaleString()}</p>
+                        <p className="text-green-600 mt-0.5">
+                          {(r.inserted ?? 0).toLocaleString()} added{r.skipped ? `, ${(r.skipped).toLocaleString()} skipped (duplicates)` : ''} of {(r.total ?? 0).toLocaleString()}
+                          {r.skippedRows && r.skippedRows.length > 0 && (
+                            <button
+                              onClick={() => downloadDuplicates(r.name, r.skippedRows!)}
+                              className="ml-2 text-[#1F3864] font-semibold hover:underline"
+                            >
+                              ↓ Download duplicates ({r.skippedRows.length})
+                            </button>
+                          )}
+                        </p>
                       )}
                       {r.status === 'error' && <p className="text-red-500 mt-0.5">{r.error}</p>}
                     </div>

@@ -171,6 +171,9 @@ export async function POST(req: NextRequest) {
   const usedPhrases = new Set<string>()
   const toInsert = []
   let skipped = 0
+  // Skipped DUPLICATE rows (original columns + reason), returned so the admin
+  // can download exactly which leads were skipped. Blank rows aren't included.
+  const skippedRows: Record<string, string>[] = []
 
   // Data Leads is a passthrough product: store each row's ORIGINAL columns
   // verbatim (in raw_data) and deliver them to agents exactly as uploaded,
@@ -183,12 +186,16 @@ export async function POST(req: NextRequest) {
     if (!mapped['contact_name'] && !mapped['primary_phone'] && !mapped['lead_id']) { skipped++; continue }
 
     const sourceId = mapped['lead_id'] || null
-    if (sourceId && existingSourceIds.has(sourceId)) { skipped++; continue }
+    if (sourceId && existingSourceIds.has(sourceId)) {
+      skipped++; skippedRows.push({ ...rows[idx], 'Skip Reason': 'Duplicate ID (already in system or earlier in file)' }); continue
+    }
 
     const namePhoneKey = mapped['contact_name'] && mapped['primary_phone']
       ? `${mapped['contact_name'].toLowerCase().trim()}|${mapped['primary_phone'].trim()}`
       : null
-    if (namePhoneKey && existingNamePhone.has(namePhoneKey)) { skipped++; continue }
+    if (namePhoneKey && existingNamePhone.has(namePhoneKey)) {
+      skipped++; skippedRows.push({ ...rows[idx], 'Skip Reason': 'Duplicate name + phone' }); continue
+    }
 
     if (sourceId) existingSourceIds.add(sourceId)
     if (namePhoneKey) existingNamePhone.add(namePhoneKey)
@@ -243,7 +250,7 @@ export async function POST(req: NextRequest) {
 
   if (finalize) await syncAvailableCount(supabase, tier)
 
-  return NextResponse.json({ inserted, skipped, tier })
+  return NextResponse.json({ inserted, skipped, tier, skippedRows })
 }
 
 async function syncAvailableCount(supabase: ReturnType<typeof createAdminClient>, tier: string) {
