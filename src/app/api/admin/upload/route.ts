@@ -54,6 +54,7 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
 const DROP_KEYWORDS = new Set([
   'gender','education','timezone','timzone','areacode','dob','dateofbirth','tobaccouser','healthnotes','spanishspeaking','recorddate',
   'county','callintime','borrowerage','borrowermedicalissues','borrowertobacco','coborrower','closingdate','lastaction',
+  'phoneinaction','callinaction','callaction','action',
 ])
 
 function buildColumnMap(headers: string[]): Record<string, string> {
