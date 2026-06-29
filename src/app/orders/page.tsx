@@ -7,12 +7,17 @@ type Order = {
   tier: string
   quantity: number
   total_amount: number
+  amount_collected: number | null
   status: string
   created_at: string
   stripe_session_id: string
   download_token: string | null
   downloaded_at: string | null
 }
+
+// What the agent was actually charged (list price + 3% fee − any promo discount).
+// Falls back to list price for pending orders not yet charged / legacy orders.
+const collected = (o: Order) => Number(o.amount_collected ?? o.total_amount)
 
 export default async function OrdersPage({ searchParams }: { searchParams: { error?: string } }) {
   const supabase = createClient()
@@ -75,7 +80,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
             {sessions.map(sessionOrders => {
               const first = sessionOrders[0]
               const totalLeads = sessionOrders.reduce((s, o) => s + o.quantity, 0)
-              const totalAmount = sessionOrders.reduce((s, o) => s + Number(o.total_amount), 0)
+              const totalAmount = sessionOrders.reduce((s, o) => s + collected(o), 0)
               const allPaid = sessionOrders.every(o => o.status === 'paid')
               const anyPending = sessionOrders.some(o => o.status === 'pending')
               const downloadToken = first.download_token
@@ -114,7 +119,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { err
                       {sessionOrders.map(o => (
                         <div key={o.id} className="flex items-center justify-between text-xs text-slate-500">
                           <span>{o.tier}: {o.quantity} leads</span>
-                          <span>${Number(o.total_amount).toFixed(2)}</span>
+                          <span>${collected(o).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
