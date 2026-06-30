@@ -75,14 +75,27 @@ export async function fulfillPaidSession(
     // Atomically claim the leads in one DB call. claim_leads() uses
     // FOR UPDATE SKIP LOCKED, so two simultaneous buyers can never grab the same
     // lead, and it rolls back (assigning nothing) if inventory is short.
-    const { data: claimedCount, error: claimError } = await supabase.rpc('claim_leads', {
-      p_tier: order.tier,
-      p_states: order.states ?? null,
-      p_quantity: order.quantity,
-      p_agent: order.agent_id,
-      p_order: order.id,
-      p_sold_at: now,
-    })
+    // When the order has a per-state breakdown, claim each state's exact amount
+    // (claim_leads_by_state) so a multi-state order can't get filled lopsidedly
+    // from one state. Falls back to the combined-pool claim for orders without
+    // a breakdown (buy-from-anywhere / legacy orders).
+    const stateQuantities = order.state_quantities as Record<string, number> | null
+    const { data: claimedCount, error: claimError } = stateQuantities && Object.keys(stateQuantities).length > 0
+      ? await supabase.rpc('claim_leads_by_state', {
+          p_tier: order.tier,
+          p_state_quantities: stateQuantities,
+          p_agent: order.agent_id,
+          p_order: order.id,
+          p_sold_at: now,
+        })
+      : await supabase.rpc('claim_leads', {
+          p_tier: order.tier,
+          p_states: order.states ?? null,
+          p_quantity: order.quantity,
+          p_agent: order.agent_id,
+          p_order: order.id,
+          p_sold_at: now,
+        })
     if (claimError || (claimedCount ?? 0) < order.quantity) {
       // Couldn't assign the full order — release the claim so it can be retried
       // or manually fulfilled once inventory exists (no partial fulfillment).

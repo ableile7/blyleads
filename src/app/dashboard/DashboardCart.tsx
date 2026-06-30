@@ -55,8 +55,9 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
     .map(tier => {
       const quantities = cart[tier.tier] || {}
       const quantity = Object.values(quantities).reduce((s, q) => s + q, 0)
-      const states = Object.entries(quantities).filter(([, q]) => q > 0).map(([s]) => s)
-      return { tier: tier.tier, quantity, states, pricePerLead: tier.price_per_lead }
+      const stateQuantities = Object.fromEntries(Object.entries(quantities).filter(([, q]) => q > 0))
+      const states = Object.keys(stateQuantities)
+      return { tier: tier.tier, quantity, states, stateQuantities, pricePerLead: tier.price_per_lead }
     })
     .filter(item => item.quantity > 0)
 
@@ -78,6 +79,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
           tier: i.tier,
           quantity: i.quantity,
           states: i.states.length > 0 ? i.states : null,
+          stateQuantities: i.states.length > 0 ? i.stateQuantities : null,
         })),
         promoCode: appliedPromo,
       }),

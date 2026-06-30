@@ -3,7 +3,14 @@ import { stripe } from '@/lib/stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 
-type CartItem = { tier: string; quantity: number; states?: string[] }
+type CartItem = {
+  tier: string
+  quantity: number
+  states?: string[] | null
+  // Per-state breakdown the agent entered, e.g. { NC: 500, OH: 500 }. When
+  // present, each state is fulfilled for exactly its amount (see fulfillment).
+  stateQuantities?: Record<string, number> | null
+}
 
 const PROMO_CODES: Record<string, number> = { 'ELG2026': 0.10 }
 // 100%-off codes locked to a specific agent email (free leads — keep restricted).
@@ -39,18 +46,38 @@ export async function POST(req: NextRequest) {
 
     pricingMap[item.tier] = pricing.price_per_lead
 
-    let availQuery = adminSupabase
-      .from('leads')
-      .select('id', { count: 'exact', head: true })
-      .eq('tier', item.tier)
-      .eq('is_sold', false)
-    if (item.states && item.states.length > 0) availQuery = availQuery.in('state', item.states)
-    const { count: actualAvailable } = await availQuery
-
-    if (!actualAvailable || item.quantity > actualAvailable) {
-      return NextResponse.json({
-        error: `Only ${actualAvailable ?? 0} ${item.tier} leads available${item.states?.length ? ' for selected states' : ''}`,
-      }, { status: 400 })
+    // Verify availability. With a per-state breakdown, check EACH state has
+    // enough so we never promise leads a state can't cover (the old combined
+    // check could pass while an individual state was short).
+    const sq = item.stateQuantities
+    if (sq && Object.keys(sq).length > 0) {
+      for (const [state, qty] of Object.entries(sq)) {
+        if (qty <= 0) continue
+        const { count } = await adminSupabase
+          .from('leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('tier', item.tier)
+          .eq('is_sold', false)
+          .eq('state', state)
+        if (!count || qty > count) {
+          return NextResponse.json({
+            error: `Only ${count ?? 0} ${item.tier} leads available in ${state}`,
+          }, { status: 400 })
+        }
+      }
+    } else {
+      let availQuery = adminSupabase
+        .from('leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('tier', item.tier)
+        .eq('is_sold', false)
+      if (item.states && item.states.length > 0) availQuery = availQuery.in('state', item.states)
+      const { count: actualAvailable } = await availQuery
+      if (!actualAvailable || item.quantity > actualAvailable) {
+        return NextResponse.json({
+          error: `Only ${actualAvailable ?? 0} ${item.tier} leads available${item.states?.length ? ' for selected states' : ''}`,
+        }, { status: 400 })
+      }
     }
   }
 
@@ -128,6 +155,7 @@ export async function POST(req: NextRequest) {
     stripe_session_id: session.id,
     status: 'pending',
     states: item.states && item.states.length > 0 ? item.states : null,
+    state_quantities: item.stateQuantities && Object.keys(item.stateQuantities).length > 0 ? item.stateQuantities : null,
     download_token: downloadToken,
   }))
 
