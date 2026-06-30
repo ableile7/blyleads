@@ -49,11 +49,16 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
   loan_amount:           ['mortgageamount','mortageamount','loanamount','loanamt','amount'],
   coverage_type:         ['policytype','coveragetype','coverage','policy','producttype'],
   financial_institution: ['financialinstitution','mortgagecompany','lender','bank','institution','servicer'],
+  // Core mortgage-protection qualifying fields (only output on Core downloads).
+  age:                   ['borrowerage','age'],
+  smoker:                ['tobaccouser','borrowertobacco','tobacco','smoker','smokerstatus','nicotine'],
+  co_borrower:           ['coborrower','coborrowername','cosigner'],
+  health_conditions:     ['borrowermedicalissues','healthnotes','medicalissues','healthconditions','medicalconditions','healthissues'],
 }
 
 const DROP_KEYWORDS = new Set([
-  'gender','education','timezone','timzone','areacode','dob','dateofbirth','tobaccouser','healthnotes','spanishspeaking','recorddate',
-  'county','callintime','borrowerage','borrowermedicalissues','borrowertobacco','coborrower','closingdate','lastaction',
+  'gender','education','timezone','timzone','areacode','dob','dateofbirth','spanishspeaking','recorddate',
+  'county','callintime','closingdate','lastaction',
   'phoneinaction','callinaction','callaction','action',
 ])
 
@@ -235,6 +240,10 @@ export async function POST(req: NextRequest) {
         loan_amount:           mapped['loan_amount'] || null,
         coverage_type:         mapped['coverage_type'] || null,
         financial_institution: mapped['financial_institution'] || null,
+        age:                   mapped['age'] || null,
+        smoker:                mapped['smoker'] || null,
+        co_borrower:           mapped['co_borrower'] || null,
+        health_conditions:     mapped['health_conditions'] || null,
         auth_phrase:           uniquePhrase(usedPhrases),
         is_sold:               false,
       })

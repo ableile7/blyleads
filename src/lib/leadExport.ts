@@ -21,6 +21,17 @@ export const DB_TO_CSV: Record<string, string> = {
 
 const COLUMNS = Object.values(DB_TO_CSV)
 
+// Core mortgage-protection leads carry extra qualifying fields that only make
+// sense for (and are only delivered on) the Core tiers. Appended to the right
+// of the standard columns on Core downloads; never shown for other tiers.
+const CORE_EXTRA: Record<string, string> = {
+  age:               'Age',
+  smoker:            'Smoker',
+  co_borrower:       'Co-Borrower',
+  health_conditions: 'Health Conditions',
+}
+const CORE_TIERS = new Set(['Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023'])
+
 type ExportOrder = { id: string; tier: string; quantity: number; agent_id: string }
 
 // Builds the same multi-sheet workbook an agent downloads — one sheet per order
@@ -84,16 +95,18 @@ export async function buildLeadsWorkbook(
       })
       sheet = XLSX.utils.aoa_to_sheet([cols, ...rows])
     } else {
+      // Core tiers get the extra qualifying columns appended; others don't.
+      const colMap = CORE_TIERS.has(order.tier) ? { ...DB_TO_CSV, ...CORE_EXTRA } : DB_TO_CSV
+      const entries = Object.entries(colMap) // [dbKey, header] in output order
+      const headers = entries.map(([, header]) => header)
       const rows = allLeads.map(lead =>
-        COLUMNS.map(col => {
-          const dbKey = Object.entries(DB_TO_CSV).find(([, v]) => v === col)?.[0]
-          if (!dbKey) return ''
+        entries.map(([dbKey]) => {
           const val = (lead as Record<string, unknown>)[dbKey]
           // Show the display label (e.g. "Apex Core") in the List Code column.
           return dbKey === 'tier' ? tierLabel(String(val ?? '')) : (val ?? '')
         })
       )
-      sheet = XLSX.utils.aoa_to_sheet([COLUMNS, ...rows])
+      sheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
     }
     XLSX.utils.book_append_sheet(workbook, sheet, tierLabel(order.tier).slice(0, 31))
   }
