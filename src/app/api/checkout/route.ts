@@ -22,6 +22,17 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Middleware only guards pages, not /api/* — enforce approval here too so a
+  // pending (or rejected-but-still-signed-in) agent can't buy via direct API call.
+  const { data: agent } = await supabase
+    .from('agents')
+    .select('status')
+    .eq('id', user.id)
+    .single()
+  if (!agent || agent.status !== 'approved') {
+    return NextResponse.json({ error: 'Your account has not been approved to purchase leads.' }, { status: 403 })
+  }
+
   const { items, promoCode }: { items: CartItem[]; promoCode?: string } = await req.json()
   if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
@@ -30,8 +41,22 @@ export async function POST(req: NextRequest) {
   // Validate each tier and verify availability
   const pricingMap: Record<string, number> = {}
   for (const item of items) {
-    if (!item.tier || !item.quantity || item.quantity < 1) {
+    if (!item.tier || !Number.isInteger(item.quantity) || item.quantity < 1) {
       return NextResponse.json({ error: `Invalid quantity for ${item.tier}` }, { status: 400 })
+    }
+
+    // Never trust the client's quantity when a per-state breakdown is present:
+    // Stripe charges by quantity, but fulfillment claims sum(stateQuantities) —
+    // a mismatch would deliver more leads than were paid for.
+    if (item.stateQuantities && Object.keys(item.stateQuantities).length > 0) {
+      const stateValues = Object.values(item.stateQuantities)
+      if (stateValues.some(q => !Number.isInteger(q) || q < 0)) {
+        return NextResponse.json({ error: `Invalid state quantities for ${item.tier}` }, { status: 400 })
+      }
+      const stateSum = stateValues.reduce((s, q) => s + q, 0)
+      if (stateSum !== item.quantity) {
+        return NextResponse.json({ error: `Quantity mismatch for ${item.tier}: ${item.quantity} ordered but ${stateSum} across states` }, { status: 400 })
+      }
     }
 
     const { data: pricing } = await supabase
