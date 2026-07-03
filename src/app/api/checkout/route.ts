@@ -15,6 +15,12 @@ type CartItem = {
 const PROMO_CODES: Record<string, number> = { 'ELG2026': 0.10 }
 // 100%-off codes locked to a specific agent email (free leads — keep restricted).
 const FREE_CODES: Record<string, string> = { 'STARRFREE': 'davidstarr.pinnacle@gmail.com' }
+// Single-use percent-off codes locked to one agent and scoped to ONE tier —
+// the discount applies only to that tier's items in the cart. Burned once any
+// paid order carries the code (recorded via orders.promo_code).
+const TIER_PERCENT_CODES: Record<string, { email: string; tier: string; percentOff: number }> = {
+  'COLBY20': { email: 'colbysimkins.pinnacle@gmail.com', tier: 'Core 2021-2022', percentOff: 20 },
+}
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -117,12 +123,36 @@ export async function POST(req: NextRequest) {
   let stripeCoupon: string | undefined
   const code = promoCode?.toUpperCase()
   const freeForEmail = code ? FREE_CODES[code] : undefined
+  const tierPercent = code ? TIER_PERCENT_CODES[code] : undefined
   if (freeForEmail) {
     // 100%-off code — only valid for the agent it's locked to.
     if ((user.email || '').toLowerCase() !== freeForEmail.toLowerCase()) {
       return NextResponse.json({ error: 'This promo code is not valid for your account.' }, { status: 400 })
     }
     const coupon = await stripe.coupons.create({ percent_off: 100, duration: 'once', name: `Free: ${code}` })
+    stripeCoupon = coupon.id
+  } else if (tierPercent) {
+    if ((user.email || '').toLowerCase() !== tierPercent.email.toLowerCase()) {
+      return NextResponse.json({ error: 'This promo code is not valid for your account.' }, { status: 400 })
+    }
+    // Single-use: dead as soon as any paid order has it recorded.
+    const { data: used } = await adminSupabase
+      .from('orders').select('id').eq('promo_code', code).eq('status', 'paid').limit(1)
+    if (used && used.length > 0) {
+      return NextResponse.json({ error: 'This promo code has already been used.' }, { status: 400 })
+    }
+    const tierSubtotal = items
+      .filter(i => i.tier === tierPercent.tier)
+      .reduce((s, i) => s + pricingMap[i.tier] * i.quantity, 0)
+    if (tierSubtotal <= 0) {
+      return NextResponse.json({ error: `This promo code only applies to ${tierPercent.tier} leads.` }, { status: 400 })
+    }
+    const coupon = await stripe.coupons.create({
+      amount_off: Math.round(tierSubtotal * (tierPercent.percentOff / 100) * 100),
+      currency: 'usd',
+      duration: 'once',
+      name: `Promo: ${code}`,
+    })
     stripeCoupon = coupon.id
   } else {
     const discountPerLead = code ? PROMO_CODES[code] : undefined
@@ -182,9 +212,17 @@ export async function POST(req: NextRequest) {
     states: item.states && item.states.length > 0 ? item.states : null,
     state_quantities: item.stateQuantities && Object.keys(item.stateQuantities).length > 0 ? item.stateQuantities : null,
     download_token: downloadToken,
+    // Only set when a code actually applied — single-use enforcement keys off this.
+    ...(stripeCoupon && code ? { promo_code: code } : {}),
   }))
 
-  await adminSupabase.from('orders').insert(orderRows)
+  const { error: orderError } = await adminSupabase.from('orders').insert(orderRows)
+  if (orderError) {
+    // Never hand out a payable link with no order rows behind it — the webhook
+    // would have nothing to fulfill and there'd be no record of the purchase.
+    try { await stripe.checkout.sessions.expire(session.id) } catch { /* already unpayable */ }
+    return NextResponse.json({ error: 'Could not create your order. Please try again.' }, { status: 500 })
+  }
 
   return NextResponse.json({ url: session.url })
 }

@@ -20,6 +20,11 @@ const TIER_CATEGORY: Record<string, string> = {
 const PROMO_CODES: Record<string, number> = { 'ELG2026': 0.10 }
 // 100%-off codes (free). The server enforces which agent each is locked to.
 const FREE_CODES = ['STARRFREE']
+// Percent-off codes scoped to a single tier. The server enforces the account
+// lock and single use; here we just compute/show the discount on that tier.
+const TIER_PERCENT_CODES: Record<string, { tier: string; percentOff: number }> = {
+  'COLBY20': { tier: 'Core 2021-2022', percentOff: 20 },
+}
 
 export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({})
@@ -37,7 +42,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
   function applyPromo() {
     const code = promoInput.trim().toUpperCase()
-    if (PROMO_CODES[code] || FREE_CODES.includes(code)) {
+    if (PROMO_CODES[code] || FREE_CODES.includes(code) || TIER_PERCENT_CODES[code]) {
       setAppliedPromo(code)
       setPromoError('')
     } else {
@@ -64,7 +69,10 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   const totalLeads = cartItems.reduce((s, i) => s + i.quantity, 0)
   const subtotal = cartItems.reduce((s, i) => s + i.quantity * i.pricePerLead, 0)
   const isFreePromo = appliedPromo ? FREE_CODES.includes(appliedPromo) : false
-  const discount = isFreePromo ? subtotal : (appliedPromo ? totalLeads * PROMO_CODES[appliedPromo] : 0)
+  const tierPromo = appliedPromo ? TIER_PERCENT_CODES[appliedPromo] : undefined
+  const discount = isFreePromo ? subtotal
+    : tierPromo ? cartItems.filter(i => i.tier === tierPromo.tier).reduce((s, i) => s + i.quantity * i.pricePerLead, 0) * (tierPromo.percentOff / 100)
+    : (appliedPromo ? totalLeads * PROMO_CODES[appliedPromo] : 0)
   const totalPrice = Math.max(0, subtotal - discount)
 
   async function handleCheckout() {
@@ -139,7 +147,9 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
             {discount > 0 && (
               <div className="flex items-center justify-between text-sm pt-2 border-t border-white/10">
-                <span className="text-green-400">{isFreePromo ? `Promo (${appliedPromo}) — 100% off` : `Promo (${appliedPromo}) −$${PROMO_CODES[appliedPromo!].toFixed(2)}/lead`}</span>
+                <span className="text-green-400">{isFreePromo ? `Promo (${appliedPromo}) — 100% off`
+                  : tierPromo ? `Promo (${appliedPromo}) — ${tierPromo.percentOff}% off ${tierLabel(tierPromo.tier)}`
+                  : `Promo (${appliedPromo}) −$${PROMO_CODES[appliedPromo!].toFixed(2)}/lead`}</span>
                 <span className="font-semibold text-green-400">−${discount.toFixed(2)}</span>
               </div>
             )}
