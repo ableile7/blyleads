@@ -46,6 +46,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/pending', request.url))
   }
 
+  // Temporarily blocked — account, orders, and leads stay intact; no portal
+  // access until an admin reinstates them.
+  if (agent.status === 'suspended') {
+    return NextResponse.redirect(new URL('/pending?reason=suspended', request.url))
+  }
+
   if (agent.status === 'rejected') {
     await supabase.auth.signOut()
     return NextResponse.redirect(new URL('/', request.url))

@@ -10,6 +10,7 @@ export default async function AdminAgentsPage() {
 
   const pending = agents?.filter(a => a.status === 'pending') ?? []
   const approved = agents?.filter(a => a.status === 'approved') ?? []
+  const suspended = agents?.filter(a => a.status === 'suspended') ?? []
   const rejected = agents?.filter(a => a.status === 'rejected') ?? []
 
   return (
@@ -53,6 +54,25 @@ export default async function AdminAgentsPage() {
           {approved.length === 0 && <p className="text-sm text-gray-400">No approved agents yet.</p>}
         </div>
       </section>
+
+      {suspended.length > 0 && (
+        <section className="mb-10">
+          <h3 className="text-sm font-bold text-amber-600 uppercase tracking-wide mb-4">
+            Suspended ({suspended.length})
+          </h3>
+          <div className="space-y-3">
+            {suspended.map(agent => (
+              <div key={agent.id} className="bg-amber-50/60 border border-amber-200 rounded-2xl p-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-gray-800">{agent.full_name}</p>
+                  <p className="text-sm text-gray-500">{agent.email}</p>
+                </div>
+                <AgentActions agentId={agent.id} currentStatus={agent.status} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {rejected.length > 0 && (
         <section>

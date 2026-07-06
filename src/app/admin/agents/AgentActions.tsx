@@ -22,7 +22,13 @@ export default function AgentActions({ agentId, currentStatus }: { agentId: stri
       {currentStatus !== 'approved' && (
         <button onClick={() => update('approved')} disabled={loading}
           className="bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50">
-          Approve
+          {currentStatus === 'suspended' ? 'Reinstate' : 'Approve'}
+        </button>
+      )}
+      {currentStatus === 'approved' && (
+        <button onClick={() => update('suspended')} disabled={loading}
+          className="bg-amber-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-amber-600 transition disabled:opacity-50">
+          Suspend
         </button>
       )}
       {currentStatus !== 'rejected' && (

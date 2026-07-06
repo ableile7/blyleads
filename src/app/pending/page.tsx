@@ -1,4 +1,28 @@
-export default function PendingPage() {
+export default function PendingPage({ searchParams }: { searchParams: { reason?: string } }) {
+  // Suspended agents land here too (via middleware) — different copy, same shell.
+  if (searchParams.reason === 'suspended') {
+    return (
+      <div className="min-h-screen bg-ambient flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="glass-card p-10">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-amber-500/10 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+              <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-chrome tracking-wide mb-2">Access Temporarily Paused</h1>
+            <p className="text-slate-400 text-sm leading-relaxed mb-7">
+              Portal access is currently limited. Your account and order history are
+              unaffected — please contact BlyLeads if you believe this is a mistake.
+            </p>
+            <a href="/" className="text-sm text-[#7eb3ff] font-semibold hover:text-white transition">
+              ← Back to Sign In
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-ambient flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
