@@ -27,10 +27,12 @@ export default function PricingForm({ tier }: { tier: Tier }) {
   const [active, setActive] = useState(tier.is_active)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSave() {
     setSaving(true)
-    await fetch('/api/admin/pricing', {
+    setError('')
+    const res = await fetch('/api/admin/pricing', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -42,6 +44,11 @@ export default function PricingForm({ tier }: { tier: Tier }) {
       }),
     })
     setSaving(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error || 'Save failed')
+      return
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
     router.refresh()
@@ -90,6 +97,7 @@ export default function PricingForm({ tier }: { tier: Tier }) {
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
         />
       </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
       <button onClick={handleSave} disabled={saving}
         className="bg-[#1F3864] text-white rounded-lg py-2.5 font-semibold text-sm hover:bg-[#2a4a80] transition disabled:opacity-50">
         {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Price'}

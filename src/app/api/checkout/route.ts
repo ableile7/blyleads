@@ -80,9 +80,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Tier ${item.tier} not available` }, { status: 400 })
     }
 
-    pricingMap[item.tier] = isElg && pricing.elg_price_per_lead != null
-      ? Number(pricing.elg_price_per_lead)
-      : pricing.price_per_lead
+    pricingMap[item.tier] = pricing.price_per_lead
+    if (isElg) {
+      // ELG prices live in the service-role-only pricing_elg table (013).
+      // maybeSingle + unchecked error: before the migration exists this just
+      // falls through to standard pricing.
+      const { data: elg } = await adminSupabase
+        .from('pricing_elg')
+        .select('*')
+        .eq('tier', item.tier)
+        .maybeSingle()
+      if (elg?.price_per_lead != null) pricingMap[item.tier] = Number(elg.price_per_lead)
+    }
 
     // Verify availability. With a per-state breakdown, check EACH state has
     // enough so we never promise leads a state can't cover (the old combined
