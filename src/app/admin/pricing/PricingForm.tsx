@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { tierLabel } from '@/lib/tiers'
 
-type Tier = { tier: string; price_per_lead: number; available_count: number; is_active: boolean }
+type Tier = { tier: string; price_per_lead: number; elg_price_per_lead: number | null; available_count: number; is_active: boolean }
 
 const TIER_STYLES: Record<string, string> = {
   Prime:     'border-[#3b7abf] bg-[#e8f0f8]',
@@ -22,6 +22,7 @@ const TIER_STYLES: Record<string, string> = {
 export default function PricingForm({ tier }: { tier: Tier }) {
   const router = useRouter()
   const [price, setPrice] = useState(String(tier.price_per_lead))
+  const [elgPrice, setElgPrice] = useState(tier.elg_price_per_lead == null ? '' : String(tier.elg_price_per_lead))
   const [availableCount, setAvailableCount] = useState(String(tier.available_count))
   const [active, setActive] = useState(tier.is_active)
   const [saving, setSaving] = useState(false)
@@ -32,7 +33,13 @@ export default function PricingForm({ tier }: { tier: Tier }) {
     await fetch('/api/admin/pricing', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tier: tier.tier, price_per_lead: parseFloat(price), available_count: parseInt(availableCount) || 0, is_active: active }),
+      body: JSON.stringify({
+        tier: tier.tier,
+        price_per_lead: parseFloat(price),
+        elg_price_per_lead: elgPrice.trim() === '' ? null : parseFloat(elgPrice),
+        available_count: parseInt(availableCount) || 0,
+        is_active: active,
+      }),
     })
     setSaving(false)
     setSaved(true)
@@ -58,6 +65,18 @@ export default function PricingForm({ tier }: { tier: Tier }) {
           step="0.01"
           value={price}
           onChange={e => setPrice(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">ELG Price per Lead ($) — blank = standard</label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={elgPrice}
+          placeholder={price}
+          onChange={e => setElgPrice(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1F3864]"
         />
       </div>

@@ -30,14 +30,18 @@ export async function POST(req: NextRequest) {
 
   // Middleware only guards pages, not /api/* — enforce approval here too so a
   // pending (or rejected-but-still-signed-in) agent can't buy via direct API call.
+  // select('*') so this still works before migration 012 adds agents.agency —
+  // naming a missing column errors the whole query (→ 403 for everyone).
   const { data: agent } = await supabase
     .from('agents')
-    .select('status')
+    .select('*')
     .eq('id', user.id)
     .single()
   if (!agent || agent.status !== 'approved') {
     return NextResponse.json({ error: 'Your account has not been approved to purchase leads.' }, { status: 403 })
   }
+  // ELG (in-agency) agents pay the tier's ELG price where one is set.
+  const isElg = agent.agency === 'ELG'
 
   const { items, promoCode }: { items: CartItem[]; promoCode?: string } = await req.json()
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -65,9 +69,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // select('*') for the same pre-migration reason as the agents query above.
     const { data: pricing } = await supabase
       .from('pricing')
-      .select('price_per_lead, is_active')
+      .select('*')
       .eq('tier', item.tier)
       .single()
 
@@ -75,7 +80,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Tier ${item.tier} not available` }, { status: 400 })
     }
 
-    pricingMap[item.tier] = pricing.price_per_lead
+    pricingMap[item.tier] = isElg && pricing.elg_price_per_lead != null
+      ? Number(pricing.elg_price_per_lead)
+      : pricing.price_per_lead
 
     // Verify availability. With a per-state breakdown, check EACH state has
     // enough so we never promise leads a state can't cover (the old combined

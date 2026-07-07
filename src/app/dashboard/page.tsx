@@ -9,7 +9,7 @@ export default async function DashboardPage() {
 
   const { data: agent } = await supabase
     .from('agents')
-    .select('full_name, status')
+    .select('*')
     .eq('id', user.id)
     .single()
 
@@ -18,6 +18,14 @@ export default async function DashboardPage() {
     .select('*')
     .eq('is_active', true)
     .order('tier')
+
+  // ELG (in-agency) agents see the tier's ELG price where one is set; the
+  // cart and checkout then use that price everywhere automatically.
+  const isElg = agent?.agency === 'ELG'
+  const tiers = (pricing || []).map(p => ({
+    ...p,
+    price_per_lead: isElg && p.elg_price_per_lead != null ? Number(p.elg_price_per_lead) : p.price_per_lead,
+  }))
 
   return (
     <div className="min-h-screen bg-ambient">
@@ -59,7 +67,7 @@ export default async function DashboardPage() {
         <h2 className="text-3xl font-bold text-chrome tracking-wide mb-2">Available Leads</h2>
         <p className="text-slate-400 text-sm mb-10">Enter quantities by state for any tier, then purchase all at once.</p>
 
-        <DashboardCart tiers={pricing || []} />
+        <DashboardCart tiers={tiers} />
       </main>
     </div>
   )

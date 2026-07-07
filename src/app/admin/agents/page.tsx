@@ -26,11 +26,16 @@ export default async function AdminAgentsPage() {
             {pending.map(agent => (
               <div key={agent.id} className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-gray-800">{agent.full_name}</p>
+                  <p className="font-semibold text-gray-800">
+                    {agent.full_name}
+                    {agent.agency === 'ELG' && (
+                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wide bg-[#1F3864] text-white px-2 py-0.5 rounded-full align-middle">ELG</span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-500">{agent.email}</p>
                   <p className="text-xs text-gray-400 mt-1">{new Date(agent.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
-                <AgentActions agentId={agent.id} currentStatus={agent.status} />
+                <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
               </div>
             ))}
           </div>
@@ -48,7 +53,7 @@ export default async function AdminAgentsPage() {
                 <p className="font-semibold text-gray-800">{agent.full_name}</p>
                 <p className="text-sm text-gray-500">{agent.email}</p>
               </div>
-              <AgentActions agentId={agent.id} currentStatus={agent.status} />
+              <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
             </div>
           ))}
           {approved.length === 0 && <p className="text-sm text-gray-400">No approved agents yet.</p>}
@@ -64,10 +69,15 @@ export default async function AdminAgentsPage() {
             {suspended.map(agent => (
               <div key={agent.id} className="bg-amber-50/60 border border-amber-200 rounded-2xl p-5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-gray-800">{agent.full_name}</p>
+                  <p className="font-semibold text-gray-800">
+                    {agent.full_name}
+                    {agent.agency === 'ELG' && (
+                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wide bg-[#1F3864] text-white px-2 py-0.5 rounded-full align-middle">ELG</span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-500">{agent.email}</p>
                 </div>
-                <AgentActions agentId={agent.id} currentStatus={agent.status} />
+                <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
               </div>
             ))}
           </div>
@@ -83,10 +93,15 @@ export default async function AdminAgentsPage() {
             {rejected.map(agent => (
               <div key={agent.id} className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-gray-800">{agent.full_name}</p>
+                  <p className="font-semibold text-gray-800">
+                    {agent.full_name}
+                    {agent.agency === 'ELG' && (
+                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wide bg-[#1F3864] text-white px-2 py-0.5 rounded-full align-middle">ELG</span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-500">{agent.email}</p>
                 </div>
-                <AgentActions agentId={agent.id} currentStatus={agent.status} />
+                <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
               </div>
             ))}
           </div>
