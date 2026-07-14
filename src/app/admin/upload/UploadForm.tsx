@@ -76,15 +76,27 @@ export default function UploadForm() {
     return isExcel(file.name) ? parseExcel(file) : parseCsv(file)
   }
 
+  // Retried up to 3 times: a single network blip 25 chunks into a large file
+  // shouldn't kill the whole upload. Re-sending a chunk the server already
+  // processed is safe — dedup skips its rows.
   async function uploadChunk(tier: string, rows: Record<string, string>[], finalize: boolean) {
-    const res = await fetch('/api/admin/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tier, rows, finalize }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Upload failed')
-    return data as { inserted: number; skipped: number; skippedRows?: Record<string, string>[]; tierCounts?: Record<string, number> }
+    let lastErr: unknown
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier, rows, finalize }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Upload failed')
+        return data as { inserted: number; skipped: number; skippedRows?: Record<string, string>[]; tierCounts?: Record<string, number> }
+      } catch (e) {
+        lastErr = e
+        if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 2000))
+      }
+    }
+    throw lastErr
   }
 
   // Download the skipped duplicates as a CSV (original columns + Skip Reason).
