@@ -179,15 +179,20 @@ export async function POST(req: NextRequest) {
   })
 
   // Scoped dedup: only check this chunk's source IDs and phones against the DB.
-  const existingSourceIds = new Set<string>()
+  // DB matches and in-file repeats are tracked separately so the skip reason
+  // can say WHICH kind of duplicate each skipped row was.
+  const dbSourceIds = new Set<string>()
   ;(await existingValues(supabase, 'source_lead_id', 'source_lead_id', mappedRows.map(r => r['lead_id']).filter(Boolean)))
-    .forEach(r => { if (r.source_lead_id) existingSourceIds.add(r.source_lead_id) })
+    .forEach(r => { if (r.source_lead_id) dbSourceIds.add(r.source_lead_id) })
 
-  const existingNamePhone = new Set<string>()
+  const dbNamePhone = new Set<string>()
   ;(await existingValues(supabase, 'primary_phone', 'contact_name, primary_phone', mappedRows.map(r => r['primary_phone']).filter(Boolean)))
     .forEach(r => {
-      if (r.contact_name && r.primary_phone) existingNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
+      if (r.contact_name && r.primary_phone) dbNamePhone.add(`${r.contact_name.toLowerCase().trim()}|${r.primary_phone.trim()}`)
     })
+
+  const fileSourceIds = new Set<string>()
+  const fileNamePhone = new Set<string>()
 
   // Next sequential BLY id (chunks run in series, so this advances correctly).
   const { data: lastLead } = await supabase
@@ -217,19 +222,23 @@ export async function POST(req: NextRequest) {
     if (!mapped['contact_name'] && !mapped['primary_phone'] && !mapped['lead_id']) { skipped++; continue }
 
     const sourceId = mapped['lead_id'] || null
-    if (sourceId && existingSourceIds.has(sourceId)) {
-      skipped++; skippedRows.push({ ...rows[idx], 'Skip Reason': 'Duplicate ID (already in system or earlier in file)' }); continue
+    if (sourceId && (dbSourceIds.has(sourceId) || fileSourceIds.has(sourceId))) {
+      skipped++; skippedRows.push({ ...rows[idx], 'Skip Reason': dbSourceIds.has(sourceId)
+        ? 'Duplicate ID — matches a lead already in the system'
+        : 'Duplicate ID — appears earlier in this file' }); continue
     }
 
     const namePhoneKey = mapped['contact_name'] && mapped['primary_phone']
       ? `${mapped['contact_name'].toLowerCase().trim()}|${mapped['primary_phone'].trim()}`
       : null
-    if (namePhoneKey && existingNamePhone.has(namePhoneKey)) {
-      skipped++; skippedRows.push({ ...rows[idx], 'Skip Reason': 'Duplicate name + phone' }); continue
+    if (namePhoneKey && (dbNamePhone.has(namePhoneKey) || fileNamePhone.has(namePhoneKey))) {
+      skipped++; skippedRows.push({ ...rows[idx], 'Skip Reason': dbNamePhone.has(namePhoneKey)
+        ? 'Duplicate name + phone — matches a lead already in the system'
+        : 'Duplicate name + phone — appears earlier in this file' }); continue
     }
 
-    if (sourceId) existingSourceIds.add(sourceId)
-    if (namePhoneKey) existingNamePhone.add(namePhoneKey)
+    if (sourceId) fileSourceIds.add(sourceId)
+    if (namePhoneKey) fileNamePhone.add(namePhoneKey)
 
     const leadId = `BLY-${String(nextNum++).padStart(6, '0')}`
 
