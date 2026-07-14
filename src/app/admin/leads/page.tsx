@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { tierLabel } from '@/lib/tiers'
 
-const TIERS = ['Apex', 'A-Tier', 'Select', 'Prime', 'Premier', 'Essential', 'Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023', 'Data Leads']
+const TIERS = ['Apex', 'A-Tier', 'Select', 'Prime', 'Premier', 'Essential', 'Essential 2018-2020', 'Essential 2021-2022', 'Essential 2023', 'Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023', 'Data Leads']
 
 export default async function AdminLeadsPage() {
   const supabase = createAdminClient()
@@ -25,6 +25,9 @@ export default async function AdminLeadsPage() {
     'Core 2018-2020': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
     'Core 2021-2022': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
     'Core 2023': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
+    'Essential 2018-2020': { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
+    'Essential 2021-2022': { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
+    'Essential 2023': { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
     Apex: { badge: 'bg-[#5c4200] text-amber-200', bar: 'bg-amber-400' },
     'A-Tier': { badge: 'bg-[#3c434b] text-gray-200', bar: 'bg-gray-400' },
   }

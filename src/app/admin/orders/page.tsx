@@ -231,6 +231,9 @@ function TierBadge({ tier }: { tier: string }) {
     'Core 2018-2020': 'bg-[#fbf3d9] text-[#6b5500]',
     'Core 2021-2022': 'bg-[#fbf3d9] text-[#6b5500]',
     'Core 2023': 'bg-[#fbf3d9] text-[#6b5500]',
+    'Essential 2018-2020': 'bg-[#eef1f4] text-[#3a4452]',
+    'Essential 2021-2022': 'bg-[#eef1f4] text-[#3a4452]',
+    'Essential 2023': 'bg-[#eef1f4] text-[#3a4452]',
     Apex: 'bg-gradient-to-r from-[#fff1c2] to-[#ffe49a] text-[#7a5800]',
     'A-Tier': 'bg-gradient-to-r from-[#eceef1] to-[#d3d8de] text-[#3c434b]',
   }

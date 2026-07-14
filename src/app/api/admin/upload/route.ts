@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthed } from '@/lib/adminAuth'
-import { isValidTier } from '@/lib/tiers'
+import { isValidTier, yearTier } from '@/lib/tiers'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const maxDuration = 60 // each chunk is small; no long-running scans
@@ -54,6 +54,31 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
   smoker:                ['tobaccouser','borrowertobacco','tobacco','smoker','smokerstatus','nicotine'],
   co_borrower:           ['coborrower','coborrowername','cosigner'],
   health_conditions:     ['borrowermedicalissues','healthnotes','medicalissues','healthconditions','medicalconditions','healthissues'],
+}
+
+// Headers that carry the lead's generation date — used to route Core/Essential
+// rows into their year tiers. (recorddate is also in DROP_KEYWORDS: it's read
+// from the raw row for routing but never stored on the lead.)
+const DATE_KEYWORDS = new Set([
+  'recorddate', 'recordeddate', 'leaddate', 'dateadded', 'datecreated', 'createddate', 'creationdate',
+])
+
+// Pull a plausible lead year out of a raw row: 4-digit 20xx first, then a
+// trailing 2-digit year (e.g. 6/22/23) sanity-capped to 2015-2030.
+function detectYear(row: Record<string, string>): number | null {
+  for (const [header, value] of Object.entries(row)) {
+    if (!DATE_KEYWORDS.has(norm(header))) continue
+    const v = String(value ?? '').trim()
+    if (!v) continue
+    const four = v.match(/\b(20\d{2})\b/)
+    if (four) return parseInt(four[1], 10)
+    const two = v.match(/[\/\-.](\d{2})\s*$/)
+    if (two) {
+      const y = 2000 + parseInt(two[1], 10)
+      if (y >= 2015 && y <= 2030) return y
+    }
+  }
+  return null
 }
 
 const DROP_KEYWORDS = new Set([
@@ -129,7 +154,7 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient()
 
   if (rows.length === 0) {
-    if (finalize) await syncAvailableCount(supabase, tier)
+    if (finalize) await syncTierAndVariants(supabase, tier)
     return NextResponse.json({ inserted: 0, skipped: 0, tier })
   }
 
@@ -208,6 +233,10 @@ export async function POST(req: NextRequest) {
 
     const leadId = `BLY-${String(nextNum++).padStart(6, '0')}`
 
+    // Core/Essential rows route into their year tier by record date; other
+    // tiers (and rows without a parseable date) keep the file's tier.
+    const rowTier = isPassthrough ? tier : yearTier(tier, detectYear(rows[idx]))
+
     if (isPassthrough) {
       // Keep the original row exactly (minus any blank-named columns). jsonb
       // doesn't preserve key order, so store the ordered column list separately
@@ -227,7 +256,7 @@ export async function POST(req: NextRequest) {
       })
     } else {
       toInsert.push({
-        tier,
+        tier:                  rowTier,
         lead_id:               leadId,
         source_lead_id:        sourceId,
         contact_name:          mapped['contact_name'] || null,
@@ -251,16 +280,27 @@ export async function POST(req: NextRequest) {
   }
 
   let inserted = 0
+  const tierCounts: Record<string, number> = {}
   for (let i = 0; i < toInsert.length; i += 500) {
     const batch = toInsert.slice(i, i + 500)
     const { error } = await supabase.from('leads').insert(batch)
     if (error) return NextResponse.json({ error: `Insert failed: ${error.message}`, inserted, skipped }, { status: 500 })
     inserted += batch.length
+    for (const row of batch) tierCounts[row.tier] = (tierCounts[row.tier] || 0) + 1
   }
 
-  if (finalize) await syncAvailableCount(supabase, tier)
+  if (finalize) await syncTierAndVariants(supabase, tier)
 
-  return NextResponse.json({ inserted, skipped, tier, skippedRows })
+  return NextResponse.json({ inserted, skipped, tier, skippedRows, tierCounts })
+}
+
+// A Core/Essential upload can land rows in any of its year tiers, so sync
+// them all (chunks may have routed rows this finalize call never saw).
+async function syncTierAndVariants(supabase: ReturnType<typeof createAdminClient>, tier: string) {
+  const tiers = tier === 'Core' || tier === 'Essential'
+    ? [tier, `${tier} 2018-2020`, `${tier} 2021-2022`, `${tier} 2023`]
+    : [tier]
+  for (const t of tiers) await syncAvailableCount(supabase, t)
 }
 
 async function syncAvailableCount(supabase: ReturnType<typeof createAdminClient>, tier: string) {

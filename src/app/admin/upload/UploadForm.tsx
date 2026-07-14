@@ -15,6 +15,7 @@ type FileResult = {
   inserted?: number
   skipped?: number
   skippedRows?: Record<string, string>[]
+  tierCounts?: Record<string, number>
   error?: string
 }
 
@@ -64,7 +65,7 @@ export default function UploadForm() {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Upload failed')
-    return data as { inserted: number; skipped: number; skippedRows?: Record<string, string>[] }
+    return data as { inserted: number; skipped: number; skippedRows?: Record<string, string>[]; tierCounts?: Record<string, number> }
   }
 
   // Download the skipped duplicates as a CSV (original columns + Skip Reason).
@@ -102,15 +103,17 @@ export default function UploadForm() {
 
         let inserted = 0, skipped = 0, processed = 0
         const skippedRows: Record<string, string>[] = []
+        const tierCounts: Record<string, number> = {}
         for (let c = 0; c < rows.length; c += CHUNK_SIZE) {
           const chunk = rows.slice(c, c + CHUNK_SIZE)
           const isLast = c + CHUNK_SIZE >= rows.length
           const r = await uploadChunk(tier, chunk, isLast)
           inserted += r.inserted; skipped += r.skipped; processed += chunk.length
           if (r.skippedRows) skippedRows.push(...r.skippedRows)
+          for (const [t, n] of Object.entries(r.tierCounts || {})) tierCounts[t] = (tierCounts[t] || 0) + n
           updateResult(i, { processed, inserted, skipped })
         }
-        updateResult(i, { status: 'done', inserted, skipped, skippedRows })
+        updateResult(i, { status: 'done', inserted, skipped, skippedRows, tierCounts })
         // Record the upload in the history log (best-effort).
         try {
           await fetch('/api/admin/upload-log', {
@@ -182,6 +185,11 @@ export default function UploadForm() {
                       {r.status === 'done' && (
                         <p className="text-green-600 mt-0.5">
                           {(r.inserted ?? 0).toLocaleString()} added{r.skipped ? `, ${(r.skipped).toLocaleString()} skipped (duplicates)` : ''} of {(r.total ?? 0).toLocaleString()}
+                          {r.tierCounts && Object.keys(r.tierCounts).length > 1 && (
+                            <span className="block text-xs text-green-700 mt-0.5">
+                              {Object.entries(r.tierCounts).sort().map(([t, n]) => `${t}: ${n.toLocaleString()}`).join(' · ')}
+                            </span>
+                          )}
                           {r.skippedRows && r.skippedRows.length > 0 && (
                             <button
                               onClick={() => downloadDuplicates(r.name, r.skippedRows!)}
@@ -226,10 +234,15 @@ export default function UploadForm() {
           <div className="flex justify-between"><span className="text-gray-500">Contains BRONZE</span><span className="font-semibold text-[#1F3864]">Prime</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains COPPER</span><span className="font-semibold text-[#2d4a1e]">Select</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains RUBY</span><span className="font-semibold text-[#4a1e3a]">Premier</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Contains GOLD</span><span className="font-semibold text-yellow-600">Core</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Contains SILVER</span><span className="font-semibold text-gray-500">Essential</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains GOLD</span><span className="font-semibold text-yellow-600">Core (split by year)</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains SILVER</span><span className="font-semibold text-gray-500">Essential (split by year)</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains DATA</span><span className="font-semibold text-[#0f766e]">Data Leads</span></div>
         </div>
+        <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+          GOLD and SILVER rows are routed into 2018-2020 / 2021-2022 / 2023 tiers by each
+          row&apos;s Record Date. Rows with no readable date (or a year outside those ranges)
+          stay in the base Core/Essential tier — the result line shows the split.
+        </p>
       </div>
     </div>
   )
