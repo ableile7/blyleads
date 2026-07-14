@@ -20,6 +20,8 @@ const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; g
   'Essential 2018-2020': { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
   'Essential 2021-2022': { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
   'Essential 2023': { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
+  'Core 2024-2025': { badge: 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50', bg: 'bg-gradient-to-b from-[#1f1700]/90 to-[#0f0b00]/95', border: 'border-[#9e7a00]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(240,192,64,0.35)]' },
+  'Essential 2024-2025': { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
 }
 
 const TIER_INFO: Record<string, { year: string; description: string }> = {
@@ -36,6 +38,8 @@ const TIER_INFO: Record<string, { year: string; description: string }> = {
   'Essential 2018-2020': { year: 'Partial', description: 'Partial leads — only some client details were captured when the lead was generated.' },
   'Essential 2021-2022': { year: 'Partial', description: 'Partial leads — only some client details were captured when the lead was generated.' },
   'Essential 2023':      { year: 'Partial', description: 'Partial leads — only some client details were captured when the lead was generated.' },
+  'Core 2024-2025':      { year: 'Complete', description: 'Complete leads — the full client profile was captured when the lead was generated.' },
+  'Essential 2024-2025': { year: 'Partial', description: 'Partial leads — only some client details were captured when the lead was generated.' },
 }
 
 type Props = {

@@ -5,7 +5,7 @@ import { tierLabel } from '@/lib/tiers'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
-const TIER_ORDER = ['Apex', 'A-Tier', 'Core 2023', 'Core 2021-2022', 'Core 2018-2020', 'Premier', 'Prime', 'Select', 'Essential 2023', 'Essential 2021-2022', 'Essential 2018-2020', 'Essential', 'Core', 'Data Leads']
+const TIER_ORDER = ['Apex', 'A-Tier', 'Core 2024-2025', 'Core 2023', 'Core 2021-2022', 'Core 2018-2020', 'Premier', 'Prime', 'Select', 'Essential 2024-2025', 'Essential 2023', 'Essential 2021-2022', 'Essential 2018-2020', 'Essential', 'Core', 'Data Leads']
 
 const TIER_CATEGORY: Record<string, string> = {
   Apex: 'Highest Quality Aged Mortgage Protection',
@@ -19,6 +19,8 @@ const TIER_CATEGORY: Record<string, string> = {
   'Essential 2018-2020': 'Aged Mortgage Protection',
   'Essential 2021-2022': 'Aged Mortgage Protection',
   'Essential 2023': 'Aged Mortgage Protection',
+  'Core 2024-2025': 'Aged Mortgage Protection',
+  'Essential 2024-2025': 'Aged Mortgage Protection',
 }
 const PROMO_CODES: Record<string, number> = { 'ELG2026': 0.10 }
 // 100%-off codes (free). The server enforces which agent each is locked to.
@@ -213,6 +215,8 @@ function TierBadge({ tier }: { tier: string }) {
     'Essential 2018-2020': 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50',
     'Essential 2021-2022': 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50',
     'Essential 2023': 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50',
+    'Core 2024-2025': 'bg-[#2a1f00]/80 text-[#f0c040] border border-[#9e7a00]/50',
+    'Essential 2024-2025': 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50',
     Apex: 'bg-gradient-to-r from-[#3a2900] to-[#5c4200] text-[#ffd24a] border border-[#e0b020]/70',
     'A-Tier': 'bg-gradient-to-r from-[#23272d] to-[#363c44] text-[#e2e8f0] border border-[#828b96]/60',
   }
