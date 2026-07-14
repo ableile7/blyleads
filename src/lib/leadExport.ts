@@ -30,7 +30,9 @@ const CORE_EXTRA: Record<string, string> = {
   co_borrower:       'Co-Borrower',
   health_conditions: 'Health Conditions',
 }
-const CORE_TIERS = new Set(['Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023'])
+// Includes retired tier names (e.g. 'Core 2023', merged into 'Core 2023-2025')
+// so re-downloads of old orders keep their extra columns.
+const CORE_TIERS = new Set(['Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023', 'Core 2023-2025'])
 
 type ExportOrder = { id: string; tier: string; quantity: number; agent_id: string }
 

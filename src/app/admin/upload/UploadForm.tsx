@@ -270,9 +270,9 @@ export default function UploadForm() {
           <div className="flex justify-between"><span className="text-gray-500">Contains DATA</span><span className="font-semibold text-[#0f766e]">Data Leads</span></div>
         </div>
         <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-          GOLD and SILVER rows are routed into 2018-2020 / 2021-2022 / 2023 tiers by each
-          row&apos;s Record Date. Rows with no readable date (or a year outside those ranges)
-          stay in the base Core/Essential tier — the result line shows the split.
+          GOLD and SILVER rows are routed into 2018-2020 / 2021-2022 / 2023-2025 tiers by each
+          row&apos;s record date (Call In Time). Rows with no readable date (or a year outside
+          those ranges) stay in the base Core/Essential tier — the result line shows the split.
         </p>
       </div>
     </div>
