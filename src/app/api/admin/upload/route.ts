@@ -57,22 +57,28 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
 }
 
 // Headers that carry the lead's generation date — used to route Core/Essential
-// rows into their year tiers. (recorddate is also in DROP_KEYWORDS: it's read
-// from the raw row for routing but never stored on the lead.)
-const DATE_KEYWORDS = new Set([
+// rows into their year tiers. Ordered by trust: explicit record/lead dates,
+// then Titan's "Call In Time" (when the prospect called = lead generation),
+// then closing date as a last resort. (Several of these are also in
+// DROP_KEYWORDS: read from the raw row for routing, never stored on the lead.)
+const DATE_KEYWORDS = [
   'recorddate', 'recordeddate', 'leaddate', 'dateadded', 'datecreated', 'createddate', 'creationdate',
-])
+  'callintime', 'calldate',
+  'closingdate',
+]
 
 // Pull a plausible lead year out of a raw row: 4-digit 20xx first, then a
-// trailing 2-digit year (e.g. 6/22/23) sanity-capped to 2015-2030.
+// trailing 2-digit year (e.g. 6/22/23) sanity-capped to 2015-2030. The
+// 2-digit check uses only the date token so "10/20/18 12:15:22" works.
 function detectYear(row: Record<string, string>): number | null {
-  for (const [header, value] of Object.entries(row)) {
-    if (!DATE_KEYWORDS.has(norm(header))) continue
-    const v = String(value ?? '').trim()
+  const byNorm: Record<string, string> = {}
+  for (const [header, value] of Object.entries(row)) byNorm[norm(header)] = String(value ?? '').trim()
+  for (const key of DATE_KEYWORDS) {
+    const v = byNorm[key]
     if (!v) continue
     const four = v.match(/\b(20\d{2})\b/)
     if (four) return parseInt(four[1], 10)
-    const two = v.match(/[\/\-.](\d{2})\s*$/)
+    const two = v.split(/\s+/)[0].match(/[\/\-.](\d{2})$/)
     if (two) {
       const y = 2000 + parseInt(two[1], 10)
       if (y >= 2015 && y <= 2030) return y
