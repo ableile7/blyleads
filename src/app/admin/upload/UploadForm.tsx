@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 import { detectTier } from '@/lib/tiers'
 
 const CHUNK_SIZE = 3000
@@ -39,7 +40,7 @@ export default function UploadForm() {
   function handleDragLeave(e: React.DragEvent) { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false) }
   function handleDrop(e: React.DragEvent) {
     e.preventDefault(); setDragging(false)
-    const dropped = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'))
+    const dropped = Array.from(e.dataTransfer.files).filter(f => /\.(csv|xlsx?)$/i.test(f.name))
     if (dropped.length > 0) loadFiles(dropped)
   }
   function updateResult(index: number, patch: Partial<FileResult>) {
@@ -55,6 +56,24 @@ export default function UploadForm() {
         error: err => reject(err),
       })
     })
+  }
+
+  // Excel: first sheet, first row = headers. raw:false gives each cell's
+  // FORMATTED text, so dates come through as "6/22/23" (not serial numbers
+  // like 45099) and the year-tier routing still works.
+  async function parseExcel(file: File): Promise<Record<string, string>[]> {
+    const buf = await file.arrayBuffer()
+    const wb = XLSX.read(buf, { type: 'array' })
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    if (!ws) return []
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { raw: false, defval: '' })
+    return rows.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v ?? '')])))
+  }
+
+  const isExcel = (name: string) => /\.xlsx?$/i.test(name)
+
+  function parseFile(file: File): Promise<Record<string, string>[]> {
+    return isExcel(file.name) ? parseExcel(file) : parseCsv(file)
   }
 
   async function uploadChunk(tier: string, rows: Record<string, string>[], finalize: boolean) {
@@ -97,7 +116,7 @@ export default function UploadForm() {
 
       try {
         updateResult(i, { status: 'parsing', tier })
-        const rows = await parseCsv(file)
+        const rows = await parseFile(file)
         const total = rows.length
         updateResult(i, { status: 'uploading', total, processed: 0, inserted: 0, skipped: 0 })
 
@@ -152,10 +171,10 @@ export default function UploadForm() {
           ) : (
             <>
               <p className="text-sm font-semibold text-gray-600">Drop files here or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">Large files supported — filenames must contain APEX, BRONZE, COPPER, RUBY, GOLD, SILVER, or DATA</p>
+              <p className="text-xs text-gray-400 mt-1">CSV or Excel (.xlsx) — filenames must contain APEX, BRONZE, COPPER, RUBY, GOLD, SILVER, or DATA</p>
             </>
           )}
-          <input ref={fileRef} type="file" accept=".csv" multiple className="hidden" onChange={handleSelect} />
+          <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" multiple className="hidden" onChange={handleSelect} />
         </div>
 
         {results.length > 0 && (
