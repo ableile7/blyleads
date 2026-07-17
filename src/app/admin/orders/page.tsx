@@ -24,6 +24,7 @@ type Order = {
   created_at: string
   stripe_session_id: string
   downloaded_at: string | null
+  payment_note?: string | null
   agents?: { full_name: string; email: string }
 }
 
@@ -96,6 +97,7 @@ export default async function AdminOrdersPage() {
       date: first.created_at,
       downloaded: group.find(o => o.downloaded_at)?.downloaded_at ?? '',
       sessionId: sid ?? '',
+      note: group.find(o => o.payment_note)?.payment_note ?? '',
     }
   })
 
@@ -139,6 +141,7 @@ export default async function AdminOrdersPage() {
                 : 'failed'
               const wasDownloaded = sessionOrders.some(o => o.downloaded_at)
               const hasPaidLeads = sessionOrders.some(o => o.status === 'paid')
+              const paymentNote = sessionOrders.find(o => o.payment_note)?.payment_note
               // Price per lead. List rate is price_per_lead; the EFFECTIVE rate
               // after any promo discount is derived from amount_collected (which
               // already reflects the discount) minus the 3% processing fee, ÷
@@ -157,6 +160,7 @@ export default async function AdminOrdersPage() {
                   <td className="px-5 py-4">
                     <p className="font-medium text-gray-800">{first.agents?.full_name}</p>
                     <p className="text-xs text-gray-400">{first.agents?.email}</p>
+                    {paymentNote && <p className="text-xs font-semibold text-amber-600 mt-0.5">💵 {paymentNote}</p>}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-1">

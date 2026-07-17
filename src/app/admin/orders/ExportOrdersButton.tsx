@@ -12,11 +12,12 @@ export type ExportRow = {
   date: string
   downloaded: string
   sessionId: string
+  note: string
 }
 
 const HEADERS = [
   'Agent', 'Email', 'Tiers', 'Leads', 'Price/Lead (List)', 'Price/Lead (After Discount)',
-  'Total Collected', 'Status', 'Order Date', 'Downloaded', 'Session ID',
+  'Total Collected', 'Status', 'Order Date', 'Downloaded', 'Session ID', 'Payment Note',
 ]
 
 function csvEscape(v: string | number): string {
@@ -36,7 +37,7 @@ export default function ExportOrdersButton({ rows }: { rows: ExportRow[] }) {
     for (const r of rows) {
       lines.push([
         r.agent, r.email, r.tiers, r.leads, r.priceList, r.priceAfterDiscount,
-        r.total, r.status, isoDate(r.date), isoDate(r.downloaded), r.sessionId,
+        r.total, r.status, isoDate(r.date), isoDate(r.downloaded), r.sessionId, r.note,
       ].map(csvEscape).join(','))
     }
     // Prepend a BOM so Excel opens UTF-8 correctly.
