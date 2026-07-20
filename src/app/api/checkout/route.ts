@@ -12,7 +12,7 @@ type CartItem = {
   stateQuantities?: Record<string, number> | null
 }
 
-const PROMO_CODES: Record<string, number> = { 'ELG2026': 0.10 }
+const PROMO_CODES: Record<string, number> = {}
 // 100%-off codes locked to a specific agent email (free leads — keep restricted).
 const FREE_CODES: Record<string, string> = { 'STARRFREE': 'davidstarr.pinnacle@gmail.com' }
 // Single-use percent-off codes locked to one agent and scoped to ONE tier —
