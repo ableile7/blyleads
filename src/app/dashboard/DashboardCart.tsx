@@ -32,6 +32,10 @@ const FREE_CODES = ['STARRFREE']
 const TIER_PERCENT_CODES: Record<string, { tier: string; percentOff: number }> = {
   'COLBY20': { tier: 'Core 2021-2022', percentOff: 20 },
 }
+// General-use dollar-off-per-lead codes scoped to a set of tiers.
+const TIER_AMOUNT_CODES: Record<string, { tiers: string[]; amountOff: number }> = {
+  'CORE25': { tiers: ['Core 2021-2022', 'Core 2023-2025'], amountOff: 0.25 },
+}
 
 export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({})
@@ -49,7 +53,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
   function applyPromo() {
     const code = promoInput.trim().toUpperCase()
-    if (PROMO_CODES[code] || FREE_CODES.includes(code) || TIER_PERCENT_CODES[code]) {
+    if (PROMO_CODES[code] || FREE_CODES.includes(code) || TIER_PERCENT_CODES[code] || TIER_AMOUNT_CODES[code]) {
       setAppliedPromo(code)
       setPromoError('')
     } else {
@@ -77,8 +81,10 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
   const subtotal = cartItems.reduce((s, i) => s + i.quantity * i.pricePerLead, 0)
   const isFreePromo = appliedPromo ? FREE_CODES.includes(appliedPromo) : false
   const tierPromo = appliedPromo ? TIER_PERCENT_CODES[appliedPromo] : undefined
+  const tierAmountPromo = appliedPromo ? TIER_AMOUNT_CODES[appliedPromo] : undefined
   const discount = isFreePromo ? subtotal
     : tierPromo ? cartItems.filter(i => i.tier === tierPromo.tier).reduce((s, i) => s + i.quantity * i.pricePerLead, 0) * (tierPromo.percentOff / 100)
+    : tierAmountPromo ? cartItems.filter(i => tierAmountPromo.tiers.includes(i.tier)).reduce((s, i) => s + i.quantity, 0) * tierAmountPromo.amountOff
     : (appliedPromo ? totalLeads * PROMO_CODES[appliedPromo] : 0)
   const totalPrice = Math.max(0, subtotal - discount)
 
@@ -156,6 +162,7 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
               <div className="flex items-center justify-between text-sm pt-2 border-t border-white/10">
                 <span className="text-green-400">{isFreePromo ? `Promo (${appliedPromo}) — 100% off`
                   : tierPromo ? `Promo (${appliedPromo}) — ${tierPromo.percentOff}% off ${tierLabel(tierPromo.tier)}`
+                  : tierAmountPromo ? `Promo (${appliedPromo}) — $${tierAmountPromo.amountOff.toFixed(2)}/lead off ${tierAmountPromo.tiers.map(tierLabel).join(' & ')}`
                   : `Promo (${appliedPromo}) −$${PROMO_CODES[appliedPromo!].toFixed(2)}/lead`}</span>
                 <span className="font-semibold text-green-400">−${discount.toFixed(2)}</span>
               </div>

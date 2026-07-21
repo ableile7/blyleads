@@ -21,6 +21,11 @@ const FREE_CODES: Record<string, string> = { 'STARRFREE': 'davidstarr.pinnacle@g
 const TIER_PERCENT_CODES: Record<string, { email: string; tier: string; percentOff: number }> = {
   'COLBY20': { email: 'colbysimkins.pinnacle@gmail.com', tier: 'Core 2021-2022', percentOff: 20 },
 }
+// General-use (not agent-locked, not single-use) dollar-off-per-lead codes
+// scoped to a set of tiers — only leads in those tiers get the discount.
+const TIER_AMOUNT_CODES: Record<string, { tiers: string[]; amountOff: number }> = {
+  'CORE25': { tiers: ['Core 2021-2022', 'Core 2023-2025'], amountOff: 0.25 },
+}
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -140,6 +145,7 @@ export async function POST(req: NextRequest) {
   const code = promoCode?.toUpperCase()
   const freeForEmail = code ? FREE_CODES[code] : undefined
   const tierPercent = code ? TIER_PERCENT_CODES[code] : undefined
+  const tierAmount = code ? TIER_AMOUNT_CODES[code] : undefined
   if (freeForEmail) {
     // 100%-off code — only valid for the agent it's locked to.
     if ((user.email || '').toLowerCase() !== freeForEmail.toLowerCase()) {
@@ -165,6 +171,21 @@ export async function POST(req: NextRequest) {
     }
     const coupon = await stripe.coupons.create({
       amount_off: Math.round(tierSubtotal * (tierPercent.percentOff / 100) * 100),
+      currency: 'usd',
+      duration: 'once',
+      name: `Promo: ${code}`,
+    })
+    stripeCoupon = coupon.id
+  } else if (tierAmount) {
+    // General-use, not agent-locked, not single-use — applies to leads in ANY of the listed tiers.
+    const tierQty = items
+      .filter(i => tierAmount.tiers.includes(i.tier))
+      .reduce((s, i) => s + i.quantity, 0)
+    if (tierQty <= 0) {
+      return NextResponse.json({ error: `This promo code only applies to ${tierAmount.tiers.join(' or ')} leads.` }, { status: 400 })
+    }
+    const coupon = await stripe.coupons.create({
+      amount_off: Math.round(tierQty * tierAmount.amountOff * 100),
       currency: 'usd',
       duration: 'once',
       name: `Promo: ${code}`,
