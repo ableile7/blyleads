@@ -35,6 +35,25 @@ export function isValidTier(t: string): t is Tier {
   return (VALID_TIERS as readonly string[]).includes(t)
 }
 
+// Year-tier chains for the small-gap claim fallback (see claim_leads /
+// claim_leads_by_state in the DB): if an order's exact tier comes up a few
+// leads short in a state, the claim functions backfill from these tiers, in
+// order, before giving up. Newer vintage is tried first since those tiers
+// cost more — any substitution favors the agent, never shorts them on value.
+// Non-year tiers (Apex, Prime, Data Leads, etc.) have no natural substitute,
+// so they get no fallback chain and keep the old strict all-or-nothing claim.
+const FALLBACK_CHAINS: Record<string, string[]> = {
+  'Core 2018-2020':      ['Core 2021-2022', 'Core 2023-2025'],
+  'Core 2021-2022':      ['Core 2023-2025', 'Core 2018-2020'],
+  'Core 2023-2025':      ['Core 2021-2022', 'Core 2018-2020'],
+  'Essential 2018-2020': ['Essential 2021-2022', 'Essential 2023-2025'],
+  'Essential 2021-2022': ['Essential 2023-2025', 'Essential 2018-2020'],
+  'Essential 2023-2025': ['Essential 2021-2022', 'Essential 2018-2020'],
+}
+export function fallbackTiers(tier: string): string[] {
+  return FALLBACK_CHAINS[tier] ?? []
+}
+
 // Display label shown to users (badges, headers). The underlying tier value
 // stays stable so leads/pricing/uploads/colors don't need to change.
 export const TIER_DISPLAY: Record<string, string> = {

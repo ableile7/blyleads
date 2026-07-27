@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe } from './stripe'
+import { fallbackTiers } from './tiers'
 
 export type FulfillResult = {
   // Whether Stripe confirmed this session is actually paid.
@@ -79,6 +80,10 @@ export async function fulfillPaidSession(
     // (claim_leads_by_state) so a multi-state order can't get filled lopsidedly
     // from one state. Falls back to the combined-pool claim for orders without
     // a breakdown (buy-from-anywhere / legacy orders).
+    // Year tiers can borrow a few leads from the adjacent vintage if the
+    // exact tier comes up just short in a state (see claim_leads_by_state /
+    // claim_leads — capped at 20/state, newer vintage tried first).
+    const fallback = fallbackTiers(order.tier)
     const stateQuantities = order.state_quantities as Record<string, number> | null
     const { data: claimedCount, error: claimError } = stateQuantities && Object.keys(stateQuantities).length > 0
       ? await supabase.rpc('claim_leads_by_state', {
@@ -87,6 +92,7 @@ export async function fulfillPaidSession(
           p_agent: order.agent_id,
           p_order: order.id,
           p_sold_at: now,
+          p_fallback_tiers: fallback,
         })
       : await supabase.rpc('claim_leads', {
           p_tier: order.tier,
@@ -95,6 +101,7 @@ export async function fulfillPaidSession(
           p_agent: order.agent_id,
           p_order: order.id,
           p_sold_at: now,
+          p_fallback_tiers: fallback,
         })
     if (claimError || (claimedCount ?? 0) < order.quantity) {
       // Couldn't assign the full order — release the claim so it can be retried
@@ -104,16 +111,52 @@ export async function fulfillPaidSession(
       continue
     }
 
-    const { data: pricing } = await supabase
-      .from('pricing')
-      .select('available_count')
-      .eq('tier', order.tier)
-      .single()
-    if (pricing) {
-      await supabase
+    // If any leads landed off the order's stated tier, the fallback kicked
+    // in: leave a visible note (same field used for "Paid via Zelle" etc.)
+    // so it's obvious in the admin Orders tab, and — since inventory moved
+    // out of a SECOND tier's pool too — resync both tiers by exact recount
+    // rather than the fast approximate decrement used in the common case.
+    let substitutedTiers: string[] = []
+    if (fallback.length > 0) {
+      const { data: substituted } = await supabase
+        .from('leads')
+        .select('tier')
+        .eq('order_id', order.id)
+        .neq('tier', order.tier)
+      if (substituted && substituted.length > 0) {
+        const counts: Record<string, number> = {}
+        for (const l of substituted) counts[l.tier] = (counts[l.tier] || 0) + 1
+        substitutedTiers = Object.keys(counts)
+        if (!order.payment_note) {
+          const summary = Object.entries(counts).map(([t, n]) => `${n} from ${t}`).join(', ')
+          await supabase.from('orders').update({
+            payment_note: `Auto-substituted (inventory gap in ${order.tier}): ${summary}`,
+          }).eq('id', order.id)
+        }
+      }
+    }
+
+    if (substitutedTiers.length > 0) {
+      for (const t of [order.tier, ...substitutedTiers]) {
+        const { count } = await supabase
+          .from('leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('tier', t)
+          .eq('is_sold', false)
+        await supabase.from('pricing').update({ available_count: count ?? 0 }).eq('tier', t)
+      }
+    } else {
+      const { data: pricing } = await supabase
         .from('pricing')
-        .update({ available_count: Math.max(0, pricing.available_count - order.quantity) })
+        .select('available_count')
         .eq('tier', order.tier)
+        .single()
+      if (pricing) {
+        await supabase
+          .from('pricing')
+          .update({ available_count: Math.max(0, pricing.available_count - order.quantity) })
+          .eq('tier', order.tier)
+      }
     }
     result.fulfilled++
   }
