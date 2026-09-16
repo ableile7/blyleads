@@ -33,7 +33,7 @@ export default async function AdminLeadsPage() {
     'Essential 2023-2025': { badge: 'bg-[#2a2a2a] text-gray-300', bar: 'bg-gray-400' },
     'Core 2023-2025': { badge: 'bg-[#4a3a00] text-yellow-300', bar: 'bg-yellow-500' },
     Apex: { badge: 'bg-[#5c4200] text-amber-200', bar: 'bg-amber-400' },
-    'A-Tier': { badge: 'bg-[#3c434b] text-gray-200', bar: 'bg-gray-400' },
+    'A-Tier': { badge: 'bg-[#4a3a12] text-amber-100', bar: 'bg-amber-300' },
   }
 
   return (

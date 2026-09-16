@@ -243,7 +243,7 @@ function TierBadge({ tier }: { tier: string }) {
     'Core 2023-2025': 'bg-[#fbf3d9] text-[#6b5500]',
     'Essential 2023-2025': 'bg-[#eef1f4] text-[#3a4452]',
     Apex: 'bg-gradient-to-r from-[#fff1c2] to-[#ffe49a] text-[#7a5800]',
-    'A-Tier': 'bg-gradient-to-r from-[#eceef1] to-[#d3d8de] text-[#3c434b]',
+    'A-Tier': 'bg-gradient-to-r from-[#fdf6e0] to-[#f5e6b8] text-[#6b5500]',
   }
   return <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${styles[tier] || 'bg-gray-100 text-gray-600'}`}>{tierLabel(tier)}</span>
 }

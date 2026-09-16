@@ -23,7 +23,7 @@ const TIER_STYLES: Record<string, string> = {
   'Core 2023-2025': 'border-[#c9a227] bg-[#fbf3d9]',
   'Essential 2023-2025': 'border-[#8a97a8] bg-[#eef1f4]',
   Apex: 'border-[#e0b020] bg-gradient-to-br from-[#fff1c2] to-[#ffe49a]',
-  'A-Tier': 'border-[#9aa3ad] bg-gradient-to-br from-[#eef0f2] to-[#dce0e5]',
+  'A-Tier': 'border-[#c9a227] bg-gradient-to-br from-[#fdf6e0] to-[#f5e6b8]',
 }
 
 export default function PricingForm({ tier }: { tier: Tier }) {
