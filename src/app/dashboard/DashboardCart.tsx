@@ -5,7 +5,7 @@ import { tierLabel } from '@/lib/tiers'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 
-const TIER_ORDER = ['Apex', 'A-Tier', 'Core 2023-2025', 'Core 2021-2022', 'Core 2018-2020', 'Premier', 'Prime', 'Select', 'Essential 2023-2025', 'Essential 2021-2022', 'Essential 2018-2020', 'Essential', 'Core', 'Data Leads']
+const TIER_ORDER = ['Apex', 'A-Tier', 'Core', 'Premier', 'Prime', 'Select', 'Essential', 'Data Leads']
 
 const TIER_CATEGORY: Record<string, string> = {
   Apex: 'Highest Quality Aged Mortgage Protection',

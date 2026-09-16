@@ -261,18 +261,18 @@ export default function UploadForm() {
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Filename → Tier Detection</p>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between"><span className="text-gray-500">Contains APEX</span><span className="font-semibold text-[#b8860b]">Apex Core</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Contains A-TIER</span><span className="font-semibold text-gray-600">Apex Essential</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains A-TIER</span><span className="font-semibold text-gray-600">Summit Core</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains BRONZE</span><span className="font-semibold text-[#1F3864]">Prime</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains COPPER</span><span className="font-semibold text-[#2d4a1e]">Select</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains RUBY</span><span className="font-semibold text-[#4a1e3a]">Premier</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Contains GOLD</span><span className="font-semibold text-yellow-600">Core (split by year)</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Contains SILVER</span><span className="font-semibold text-gray-500">Essential (split by year)</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains GOLD</span><span className="font-semibold text-yellow-600">Core</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Contains SILVER</span><span className="font-semibold text-gray-500">Essential</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Contains DATA</span><span className="font-semibold text-[#0f766e]">Data Leads</span></div>
         </div>
         <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-          GOLD and SILVER rows are routed into 2018-2020 / 2021-2022 / 2023-2025 tiers by each
-          row&apos;s record date (Call In Time). Rows with no readable date (or a year outside
-          those ranges) stay in the base Core/Essential tier — the result line shows the split.
+          Every row in a file lands in that file&apos;s tier. GOLD goes to Core and SILVER to
+          Essential as single flat tiers — the per-year 2018-2020 / 2021-2022 / 2023-2025
+          routing was removed, so a file&apos;s record dates no longer affect where rows go.
         </p>
       </div>
     </div>

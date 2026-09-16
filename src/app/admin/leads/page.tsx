@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { tierLabel } from '@/lib/tiers'
 
-const TIERS = ['Apex', 'A-Tier', 'Select', 'Prime', 'Premier', 'Essential', 'Essential 2018-2020', 'Essential 2021-2022', 'Essential 2023-2025', 'Core', 'Core 2018-2020', 'Core 2021-2022', 'Core 2023-2025', 'Data Leads']
+const TIERS = ['Apex', 'A-Tier', 'Select', 'Prime', 'Premier', 'Essential', 'Core', 'Data Leads']
 
 export default async function AdminLeadsPage() {
   const supabase = createAdminClient()

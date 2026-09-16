@@ -1,4 +1,4 @@
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardCart from './DashboardCart'
 
@@ -19,19 +19,8 @@ export default async function DashboardPage() {
     .eq('is_active', true)
     .order('tier')
 
-  // ELG (in-agency) agents see the tier's ELG price where one is set; the
-  // cart and checkout then use that price everywhere automatically. ELG
-  // prices live in the service-role-only pricing_elg table, fetched here on
-  // the server — non-ELG agents never receive them.
-  const elgPrices: Record<string, number> = {}
-  if (agent?.agency === 'ELG') {
-    const { data: elg } = await createAdminClient().from('pricing_elg').select('*')
-    for (const row of elg || []) elgPrices[row.tier] = Number(row.price_per_lead)
-  }
-  const tiers = (pricing || []).map(p => ({
-    ...p,
-    price_per_lead: elgPrices[p.tier] ?? p.price_per_lead,
-  }))
+  // Single price list — every approved agent sees the same price per tier.
+  const tiers = pricing || []
 
   return (
     <div className="min-h-screen bg-ambient">

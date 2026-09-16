@@ -2,11 +2,11 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-export default function AgentActions({ agentId, currentStatus, agency }: { agentId: string; currentStatus: string; agency?: string | null }) {
+export default function AgentActions({ agentId, currentStatus }: { agentId: string; currentStatus: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  async function update(fields: { status?: string; agency?: string | null }) {
+  async function update(fields: { status?: string }) {
     setLoading(true)
     await fetch('/api/admin/agents', {
       method: 'PATCH',
@@ -17,17 +17,9 @@ export default function AgentActions({ agentId, currentStatus, agency }: { agent
     setLoading(false)
   }
 
-  const isElg = agency === 'ELG'
 
   return (
     <div className="flex gap-2 shrink-0">
-      <button onClick={() => update({ agency: isElg ? null : 'ELG' })} disabled={loading}
-        title={isElg ? 'Remove ELG pricing' : 'Give this agent ELG (in-agency) pricing'}
-        className={`text-sm font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 ${
-          isElg ? 'bg-[#1F3864] text-white hover:bg-[#2a4a80]' : 'border border-[#1F3864]/40 text-[#1F3864] hover:bg-[#1F3864]/5'
-        }`}>
-        {isElg ? 'ELG ✓' : 'Mark ELG'}
-      </button>
       {currentStatus !== 'approved' && (
         <button onClick={() => update({ status: 'approved' })} disabled={loading}
           className="bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50">

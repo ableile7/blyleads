@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthed } from '@/lib/adminAuth'
-import { isValidTier, yearTier } from '@/lib/tiers'
+import { isValidTier } from '@/lib/tiers'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const maxDuration = 60 // each chunk is small; no long-running scans
@@ -54,37 +54,6 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
   smoker:                ['tobaccouser','borrowertobacco','tobacco','smoker','smokerstatus','nicotine'],
   co_borrower:           ['coborrower','coborrowername','cosigner'],
   health_conditions:     ['borrowermedicalissues','healthnotes','medicalissues','healthconditions','medicalconditions','healthissues'],
-}
-
-// Headers that carry the lead's generation date — used to route Core/Essential
-// rows into their year tiers. Ordered by trust: explicit record/lead dates,
-// then Titan's "Call In Time" (when the prospect called = lead generation),
-// then closing date as a last resort. (Several of these are also in
-// DROP_KEYWORDS: read from the raw row for routing, never stored on the lead.)
-const DATE_KEYWORDS = [
-  'recorddate', 'recordeddate', 'leaddate', 'dateadded', 'datecreated', 'createddate', 'creationdate',
-  'callintime', 'calldate',
-  'closingdate',
-]
-
-// Pull a plausible lead year out of a raw row: 4-digit 20xx first, then a
-// trailing 2-digit year (e.g. 6/22/23) sanity-capped to 2015-2030. The
-// 2-digit check uses only the date token so "10/20/18 12:15:22" works.
-function detectYear(row: Record<string, string>): number | null {
-  const byNorm: Record<string, string> = {}
-  for (const [header, value] of Object.entries(row)) byNorm[norm(header)] = String(value ?? '').trim()
-  for (const key of DATE_KEYWORDS) {
-    const v = byNorm[key]
-    if (!v) continue
-    const four = v.match(/\b(20\d{2})\b/)
-    if (four) return parseInt(four[1], 10)
-    const two = v.split(/\s+/)[0].match(/[\/\-.](\d{2})$/)
-    if (two) {
-      const y = 2000 + parseInt(two[1], 10)
-      if (y >= 2015 && y <= 2030) return y
-    }
-  }
-  return null
 }
 
 const DROP_KEYWORDS = new Set([
@@ -248,9 +217,9 @@ export async function POST(req: NextRequest) {
 
     const leadId = `BLY-${String(nextNum++).padStart(6, '0')}`
 
-    // Core/Essential rows route into their year tier by record date; other
-    // tiers (and rows without a parseable date) keep the file's tier.
-    const rowTier = isPassthrough ? tier : yearTier(tier, detectYear(rows[idx]))
+    // Every row keeps the file's tier — Core and Essential are flat again
+    // (migration 019), so there is no per-row year routing any more.
+    const rowTier = tier
 
     if (isPassthrough) {
       // Keep the original row exactly (minus any blank-named columns). jsonb

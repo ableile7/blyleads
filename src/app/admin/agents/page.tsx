@@ -28,14 +28,11 @@ export default async function AdminAgentsPage() {
                 <div>
                   <p className="font-semibold text-gray-800">
                     {agent.full_name}
-                    {agent.agency === 'ELG' && (
-                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wide bg-[#1F3864] text-white px-2 py-0.5 rounded-full align-middle">ELG</span>
-                    )}
                   </p>
                   <p className="text-sm text-gray-500">{agent.email}</p>
                   <p className="text-xs text-gray-400 mt-1">{new Date(agent.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
-                <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
+                <AgentActions agentId={agent.id} currentStatus={agent.status} />
               </div>
             ))}
           </div>
@@ -53,7 +50,7 @@ export default async function AdminAgentsPage() {
                 <p className="font-semibold text-gray-800">{agent.full_name}</p>
                 <p className="text-sm text-gray-500">{agent.email}</p>
               </div>
-              <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
+              <AgentActions agentId={agent.id} currentStatus={agent.status} />
             </div>
           ))}
           {approved.length === 0 && <p className="text-sm text-gray-400">No approved agents yet.</p>}
@@ -71,13 +68,10 @@ export default async function AdminAgentsPage() {
                 <div>
                   <p className="font-semibold text-gray-800">
                     {agent.full_name}
-                    {agent.agency === 'ELG' && (
-                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wide bg-[#1F3864] text-white px-2 py-0.5 rounded-full align-middle">ELG</span>
-                    )}
                   </p>
                   <p className="text-sm text-gray-500">{agent.email}</p>
                 </div>
-                <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
+                <AgentActions agentId={agent.id} currentStatus={agent.status} />
               </div>
             ))}
           </div>
@@ -95,13 +89,10 @@ export default async function AdminAgentsPage() {
                 <div>
                   <p className="font-semibold text-gray-800">
                     {agent.full_name}
-                    {agent.agency === 'ELG' && (
-                      <span className="ml-2 text-[10px] font-bold uppercase tracking-wide bg-[#1F3864] text-white px-2 py-0.5 rounded-full align-middle">ELG</span>
-                    )}
                   </p>
                   <p className="text-sm text-gray-500">{agent.email}</p>
                 </div>
-                <AgentActions agentId={agent.id} currentStatus={agent.status} agency={agent.agency} />
+                <AgentActions agentId={agent.id} currentStatus={agent.status} />
               </div>
             ))}
           </div>
