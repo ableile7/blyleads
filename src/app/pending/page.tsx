@@ -34,7 +34,7 @@ export default function PendingPage({ searchParams }: { searchParams: { reason?:
           </div>
           <h1 className="text-2xl font-bold text-chrome tracking-wide mb-2">Account Created</h1>
           <p className="text-slate-400 text-sm leading-relaxed mb-7">
-            Two steps before you can access the portal:
+            One step before you can access the portal:
           </p>
 
           <div className="text-left space-y-3 mb-7">
@@ -42,14 +42,7 @@ export default function PendingPage({ searchParams }: { searchParams: { reason?:
               <span className="w-6 h-6 btn-premium text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
               <div>
                 <p className="text-sm font-semibold text-slate-200">Confirm your email</p>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">Check your inbox for a confirmation link from BlyLeads and click it to verify your email address.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 bg-white/[0.03] border border-white/10 rounded-xl p-4">
-              <span className="w-6 h-6 bg-white/10 text-slate-300 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
-              <div>
-                <p className="text-sm font-semibold text-slate-200">Await admin approval</p>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">Once your email is confirmed, your account will be reviewed. You&apos;ll be able to sign in once approved.</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">Check your inbox for a confirmation link from BlyLeads and click it to verify your email address. Once confirmed, sign in and you&apos;ll have full access right away.</p>
               </div>
             </div>
           </div>
