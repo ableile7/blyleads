@@ -1,90 +1,63 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
+import BrowseCatalog from './BrowseCatalog'
 
-export default function LoginPage() {
-  const router = useRouter()
+// Public catalog — no login required. Reads the `pricing` table, which has a
+// public-read RLS policy, and per-state counts come from /api/states (counts
+// only, never lead rows). Lead data itself stays behind owner-scoped RLS.
+export default async function BrowsePage() {
   const supabase = createClient()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const { data: { user } } = await supabase.auth.getUser()
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-    router.push('/dashboard')
-    router.refresh()
-  }
+  const { data: pricing } = await supabase
+    .from('pricing')
+    .select('*')
+    .eq('is_active', true)
+    .order('tier')
+
+  const tiers = pricing || []
+  const total = tiers.reduce((s, t) => s + (t.available_count || 0), 0)
 
   return (
-    <div className="min-h-screen bg-ambient flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <img src="/logo.png" alt="BlyLeads" className="w-80 mx-auto drop-shadow-[0_0_28px_rgba(45,106,246,0.35)]" />
-          <p className="label-premium mt-4">Private Lead Exchange</p>
-        </div>
-
-        <div className="glass-card p-8">
-          <h2 className="text-lg font-semibold text-chrome tracking-wide mb-6">Sign In</h2>
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="label-premium block mb-2">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input-dark w-full px-4 py-3 text-sm"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label className="label-premium block mb-2">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="input-dark w-full px-4 py-3 text-sm"
-                placeholder="••••••••"
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-premium w-full text-white rounded-xl py-3 font-semibold text-sm tracking-wide"
-            >
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
-          </form>
-
-          <div className="mt-7 pt-6 border-t border-white/10 text-center">
-            <p className="text-sm text-slate-400">
-              Don&apos;t have an account?{' '}
-              <a href="/signup" className="text-[#7eb3ff] font-semibold hover:text-white transition">
-                Create One
+    <div className="min-h-screen bg-ambient">
+      <header className="sticky top-0 z-20 backdrop-blur-xl bg-[#04070e]/70 border-b border-white/10 text-white px-6 py-3 flex items-center justify-between">
+        <img src="/logo.png" alt="BlyLeads" className="h-10" />
+        <div className="flex items-center gap-4">
+          {user ? (
+            <a href="/dashboard" className="text-sm btn-premium text-white font-semibold px-4 py-1.5 rounded-lg transition">
+              Go to Dashboard
+            </a>
+          ) : (
+            <>
+              <a href="/login" className="text-sm text-slate-300 hover:text-white transition">Sign In</a>
+              <a href="/signup" className="text-sm btn-premium text-white font-semibold px-4 py-1.5 rounded-lg transition">
+                Create Account
               </a>
-            </p>
-            <p className="text-sm text-slate-500 mt-2">
-              or{' '}
-              <a href="/browse" className="text-[#7eb3ff] font-semibold hover:text-white transition">
-                browse available leads
-              </a>{' '}
-              first — no account needed
-            </p>
-          </div>
+            </>
+          )}
         </div>
-      </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        <p className="label-premium mb-2">Available Now</p>
+        <h2 className="text-3xl font-bold text-chrome tracking-wide mb-2">
+          {total.toLocaleString()} leads in stock
+        </h2>
+        <p className="text-slate-400 text-sm mb-10">
+          Browse pricing and availability by state. Create an account when you&apos;re ready to buy —
+          you pick your states and quantities at checkout and download instantly.
+        </p>
+
+        <BrowseCatalog tiers={tiers} />
+
+        <div className="mt-12 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 text-center">
+          <p className="text-slate-300 text-sm">
+            Questions about a specific state or volume? Text Alex ·{' '}
+            <a href="sms:+14198893444" className="text-[#7eb3ff] font-semibold hover:text-white transition">
+              (419) 889-3444
+            </a>
+          </p>
+        </div>
+      </main>
     </div>
   )
 }

@@ -25,14 +25,14 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Public routes — always accessible
-  const publicPaths = ['/', '/signup', '/pending', '/browse']
+  const publicPaths = ['/', '/login', '/signup', '/pending', '/browse']
   if (publicPaths.includes(path) || path.startsWith('/api/') || path.startsWith('/admin')) {
     return supabaseResponse
   }
 
   // Not logged in → login page
   if (!user) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // Check agent approval status
@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
 
   if (agent.status === 'rejected') {
     await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return supabaseResponse

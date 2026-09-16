@@ -15,7 +15,7 @@ export default function PendingPage({ searchParams }: { searchParams: { reason?:
               Portal access is currently limited. Your account and order history are
               unaffected — please contact BlyLeads if you believe this is a mistake.
             </p>
-            <a href="/" className="text-sm text-[#7eb3ff] font-semibold hover:text-white transition">
+            <a href="/login" className="text-sm text-[#7eb3ff] font-semibold hover:text-white transition">
               ← Back to Sign In
             </a>
           </div>
@@ -47,7 +47,7 @@ export default function PendingPage({ searchParams }: { searchParams: { reason?:
             </div>
           </div>
 
-          <a href="/" className="text-sm text-[#7eb3ff] font-semibold hover:text-white transition">
+          <a href="/login" className="text-sm text-[#7eb3ff] font-semibold hover:text-white transition">
             ← Back to Sign In
           </a>
         </div>

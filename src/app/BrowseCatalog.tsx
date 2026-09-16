@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { tierLabel } from '@/lib/tiers'
-import { TIER_STYLES, TIER_INFO } from '../dashboard/PurchaseForm'
+import { TIER_STYLES, TIER_INFO } from './dashboard/PurchaseForm'
 
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 type StateCount = { state: string; count: number }
@@ -77,7 +77,7 @@ function TierCard({ tier }: { tier: Tier }) {
       </div>
 
       <a
-        href={`/signup?next=/dashboard&tier=${encodeURIComponent(tier.tier)}`}
+        href={`/signup?tier=${encodeURIComponent(tier.tier)}`}
         className="mt-1 text-center btn-premium text-white font-semibold text-sm px-5 py-3 rounded-xl transition"
       >
         Create an account to purchase

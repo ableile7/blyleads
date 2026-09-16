@@ -22,7 +22,7 @@ const collected = (o: Order) => Number(o.amount_collected ?? o.total_amount)
 export default async function OrdersPage({ searchParams }: { searchParams: { error?: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
+  if (!user) redirect('/login')
 
   const errorMessages: Record<string, string> = {
     not_ready: 'Your leads are still being prepared. Please try again in a moment.',

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.redirect(new URL('/', req.url))
+  if (!user) return NextResponse.redirect(new URL('/login', req.url))
 
   const adminSupabase = createAdminClient()
 

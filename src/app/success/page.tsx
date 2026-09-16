@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 export default async function SuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
+  if (!user) redirect('/login')
 
   const adminSupabase = createAdminClient()
 

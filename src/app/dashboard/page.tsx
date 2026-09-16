@@ -5,7 +5,7 @@ import DashboardCart from './DashboardCart'
 export default async function DashboardPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
+  if (!user) redirect('/login')
 
   const { data: agent } = await supabase
     .from('agents')

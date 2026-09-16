@@ -3,33 +3,26 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function SignupPage() {
+export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
-  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSignup(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setLoading(true)
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    })
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
-
-    router.push('/pending')
+    router.push('/dashboard')
+    router.refresh()
   }
 
   return (
@@ -41,19 +34,8 @@ export default function SignupPage() {
         </div>
 
         <div className="glass-card p-8">
-          <h2 className="text-lg font-semibold text-chrome tracking-wide mb-6">Create Account</h2>
-          <form onSubmit={handleSignup} className="space-y-5">
-            <div>
-              <label className="label-premium block mb-2">Full Name</label>
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                className="input-dark w-full px-4 py-3 text-sm"
-                placeholder="John Smith"
-              />
-            </div>
+          <h2 className="text-lg font-semibold text-chrome tracking-wide mb-6">Sign In</h2>
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="label-premium block mb-2">Email</label>
               <input
@@ -70,11 +52,10 @@ export default function SignupPage() {
               <input
                 type="password"
                 required
-                minLength={6}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="input-dark w-full px-4 py-3 text-sm"
-                placeholder="Min. 6 characters"
+                placeholder="••••••••"
               />
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -83,22 +64,23 @@ export default function SignupPage() {
               disabled={loading}
               className="btn-premium w-full text-white rounded-xl py-3 font-semibold text-sm tracking-wide"
             >
-              {loading ? 'Creating account…' : 'Request Access'}
+              {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
 
           <div className="mt-7 pt-6 border-t border-white/10 text-center">
             <p className="text-sm text-slate-400">
-              Already have an account?{' '}
-              <a href="/login" className="text-[#7eb3ff] font-semibold hover:text-white transition">
-                Sign In
+              Don&apos;t have an account?{' '}
+              <a href="/signup" className="text-[#7eb3ff] font-semibold hover:text-white transition">
+                Create One
               </a>
             </p>
             <p className="text-sm text-slate-500 mt-2">
-              Just looking?{' '}
+              or{' '}
               <a href="/" className="text-[#7eb3ff] font-semibold hover:text-white transition">
-                Browse available leads
-              </a>
+                browse available leads
+              </a>{' '}
+              first — no account needed
             </p>
           </div>
         </div>
