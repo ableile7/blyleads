@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import BrowseCatalog from './BrowseCatalog'
+import DashboardCart from './dashboard/DashboardCart'
 
-// Public catalog — no login required. Reads the `pricing` table, which has a
-// public-read RLS policy, and per-state counts come from /api/states (counts
-// only, never lead rows). Lead data itself stays behind owner-scoped RLS.
-export default async function BrowsePage() {
+// Public storefront — the real purchase UI, no login required to use it.
+// Reads the `pricing` table (public-read RLS); per-state counts come from
+// /api/states, which returns counts only, never lead rows. The account wall
+// sits on the Purchase button: DashboardCart stashes the cart and sends a
+// signed-out visitor to /login (which also offers Create Account).
+export default async function StorefrontPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -23,9 +25,12 @@ export default async function BrowsePage() {
         <img src="/logo.png" alt="BlyLeads" className="h-10" />
         <div className="flex items-center gap-4">
           {user ? (
-            <a href="/dashboard" className="text-sm btn-premium text-white font-semibold px-4 py-1.5 rounded-lg transition">
-              Go to Dashboard
-            </a>
+            <>
+              <a href="/orders" className="text-sm text-slate-300 hover:text-white transition">Orders</a>
+              <a href="/dashboard" className="text-sm btn-premium text-white font-semibold px-4 py-1.5 rounded-lg transition">
+                Dashboard
+              </a>
+            </>
           ) : (
             <>
               <a href="/login" className="text-sm text-slate-300 hover:text-white transition">Sign In</a>
@@ -43,11 +48,11 @@ export default async function BrowsePage() {
           {total.toLocaleString()} leads in stock
         </h2>
         <p className="text-slate-400 text-sm mb-10">
-          Browse pricing and availability by state. Create an account when you&apos;re ready to buy —
-          you pick your states and quantities at checkout and download instantly.
+          Enter quantities by state for any tier and build your order. You&apos;ll sign in or create
+          an account at checkout — your cart carries over.
         </p>
 
-        <BrowseCatalog tiers={tiers} />
+        <DashboardCart tiers={tiers} signedIn={!!user} />
 
         <div className="mt-12 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 text-center">
           <p className="text-slate-300 text-sm">

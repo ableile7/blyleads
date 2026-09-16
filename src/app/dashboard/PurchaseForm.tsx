@@ -5,7 +5,7 @@ import { tierLabel } from '@/lib/tiers'
 type Tier = { tier: string; price_per_lead: number; available_count: number }
 type StateCount = { state: string; count: number }
 
-export const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; glow: string }> = {
+const TIER_STYLES: Record<string, { badge: string; bg: string; border: string; glow: string }> = {
   Apex:      { badge: 'bg-gradient-to-r from-[#3a2900] to-[#5c4200] text-[#ffd24a] border border-[#e0b020]/70', bg: 'bg-gradient-to-b from-[#2a1d00]/90 to-[#120c00]/96', border: 'border-[#e0b020]/55', glow: 'shadow-[0_0_36px_-8px_rgba(255,205,55,0.5)] hover:shadow-[0_0_64px_-4px_rgba(255,205,55,0.75)]' },
   'A-Tier':  { badge: 'bg-gradient-to-r from-[#2e2409] to-[#4a3a12] text-[#f0cf7a] border border-[#c9a227]/60', bg: 'bg-gradient-to-b from-[#241c06]/90 to-[#100c02]/96', border: 'border-[#c9a227]/45', glow: 'shadow-[0_0_30px_-10px_rgba(240,207,122,0.42)] hover:shadow-[0_0_54px_-6px_rgba(240,207,122,0.62)]' },
   Prime:     { badge: 'bg-[#1a3a7a]/80 text-[#7eb3ff] border border-[#2d5a9e]/50', bg: 'bg-gradient-to-b from-[#0c1830]/90 to-[#070d1a]/95', border: 'border-[#2d5a9e]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(45,106,246,0.4)]' },
@@ -26,7 +26,7 @@ export const TIER_STYLES: Record<string, { badge: string; bg: string; border: st
   'Essential 2023-2025': { badge: 'bg-[#1e242e]/80 text-[#c8d4e6] border border-[#5a6a80]/50', bg: 'bg-gradient-to-b from-[#141a24]/90 to-[#0a0e14]/95', border: 'border-[#5a6a80]/40', glow: 'hover:shadow-[0_0_40px_-8px_rgba(160,180,210,0.3)]' },
 }
 
-export const TIER_INFO: Record<string, { year: string; description: string }> = {
+const TIER_INFO: Record<string, { year: string; description: string }> = {
   Apex:      { year: '★ S-Tier · 3-6 mo', description: 'Our freshest, highest-quality mortgage protection leads — complete profiles, roughly 3-6 months old.' },
   'A-Tier':  { year: 'Summit · 9-12 mo', description: 'High-quality mortgage protection leads — complete profiles, roughly 9-12 months old.' },
   Prime:     { year: '2023',    description: 'Previously sold incomplete leads from 2023. The prospect disconnected before completing the qualification process.' },

@@ -1,15 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [fromCheckout, setFromCheckout] = useState(false)
   const supabase = createClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setFromCheckout(new URLSearchParams(window.location.search).get('checkout') === '1')
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -34,6 +39,16 @@ export default function LoginPage() {
         </div>
 
         <div className="glass-card p-8">
+          {fromCheckout && (
+            <div className="mb-6 rounded-xl border border-[#2d6af6]/30 bg-[#2d6af6]/10 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-100">One step to finish your order</p>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Sign in below, or{' '}
+                <a href="/signup" className="text-[#7eb3ff] font-semibold hover:text-white transition">create an account</a>
+                {' '}— your cart is saved either way.
+              </p>
+            </div>
+          )}
           <h2 className="text-lg font-semibold text-chrome tracking-wide mb-6">Sign In</h2>
           <form onSubmit={handleLogin} className="space-y-5">
             <div>

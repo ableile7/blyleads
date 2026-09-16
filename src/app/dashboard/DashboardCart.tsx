@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PurchaseForm from './PurchaseForm'
 import { tierLabel } from '@/lib/tiers'
 
@@ -37,13 +37,35 @@ const TIER_AMOUNT_CODES: Record<string, { tiers: string[]; amountOff: number }> 
   'CORE25': { tiers: ['Core 2021-2022', 'Core 2023-2025'], amountOff: 0.25 },
 }
 
-export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
+// Cart handed across the sign-in round trip. A signed-out visitor can pick
+// states and quantities on the public catalogue; clicking Purchase stashes the
+// cart here, sends them to /login (which also offers Create Account), and the
+// dashboard rehydrates it on arrival so nothing is retyped.
+const CART_KEY = 'blyleads_pending_cart'
+
+export default function DashboardCart({ tiers, signedIn = true }: { tiers: Tier[]; signedIn?: boolean }) {
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [promoInput, setPromoInput] = useState('')
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null)
   const [promoError, setPromoError] = useState('')
+
+  // Rehydrate a cart saved before sign-in. Wrapped because storage access
+  // throws outright in some privacy modes.
+  useEffect(() => {
+    if (!signedIn) return
+    try {
+      const raw = window.localStorage.getItem(CART_KEY)
+      if (!raw) return
+      window.localStorage.removeItem(CART_KEY)
+      const saved = JSON.parse(raw) as { cart?: typeof cart; promo?: string | null }
+      if (saved.cart && Object.keys(saved.cart).length > 0) setCart(saved.cart)
+      if (saved.promo) { setAppliedPromo(saved.promo); setPromoInput(saved.promo) }
+    } catch {
+      /* no saved cart, or storage unavailable — start empty */
+    }
+  }, [signedIn])
 
   const sortedTiers = [...tiers].sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier))
 
@@ -90,6 +112,16 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
 
   async function handleCheckout() {
     if (totalLeads === 0) return
+    // Signed out: keep the cart and go collect account details first.
+    if (!signedIn) {
+      try {
+        window.localStorage.setItem(CART_KEY, JSON.stringify({ cart, promo: appliedPromo }))
+      } catch {
+        /* storage blocked — they'll just re-pick after signing in */
+      }
+      window.location.href = '/login?checkout=1'
+      return
+    }
     setError('')
     setLoading(true)
     const res = await fetch('/api/checkout', {
@@ -202,7 +234,11 @@ export default function DashboardCart({ tiers }: { tiers: Tier[] }) {
             disabled={loading}
             className="btn-premium w-full text-white font-bold py-3 rounded-xl text-sm tracking-wide"
           >
-            {loading ? 'Redirecting to checkout…' : `Purchase ${totalLeads} Lead${totalLeads !== 1 ? 's' : ''} — $${totalPrice.toFixed(2)}`}
+            {loading
+              ? 'Redirecting to checkout…'
+              : signedIn
+                ? `Purchase ${totalLeads} Lead${totalLeads !== 1 ? 's' : ''} — $${totalPrice.toFixed(2)}`
+                : `Sign In to Purchase ${totalLeads} Lead${totalLeads !== 1 ? 's' : ''} — $${totalPrice.toFixed(2)}`}
           </button>
         </div>
       )}
