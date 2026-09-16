@@ -94,6 +94,12 @@ export default function SignupPage() {
                 Sign In
               </a>
             </p>
+            <p className="text-sm text-slate-500 mt-2">
+              Just looking?{' '}
+              <a href="/browse" className="text-[#7eb3ff] font-semibold hover:text-white transition">
+                Browse available leads
+              </a>
+            </p>
           </div>
         </div>
       </div>

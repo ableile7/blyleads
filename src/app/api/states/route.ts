@@ -1,12 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Public: powers both the signed-in purchase form and the public /browse
+// catalog. Returns per-state AVAILABILITY COUNTS only — {state, count} — never
+// lead rows, so it exposes nothing an agent couldn't already see on the
+// marketing side. Lead data stays behind owner-scoped RLS (migration 023).
 export async function GET(req: NextRequest) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const tier = req.nextUrl.searchParams.get('tier')
   if (!tier) return NextResponse.json({ error: 'Missing tier' }, { status: 400 })
 

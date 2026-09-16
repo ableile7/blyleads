@@ -72,8 +72,15 @@ export default function LoginPage() {
             <p className="text-sm text-slate-400">
               Don&apos;t have an account?{' '}
               <a href="/signup" className="text-[#7eb3ff] font-semibold hover:text-white transition">
-                Request Access
+                Create One
               </a>
+            </p>
+            <p className="text-sm text-slate-500 mt-2">
+              or{' '}
+              <a href="/browse" className="text-[#7eb3ff] font-semibold hover:text-white transition">
+                browse available leads
+              </a>{' '}
+              first — no account needed
             </p>
           </div>
         </div>
